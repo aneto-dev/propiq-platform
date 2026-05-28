@@ -179,3 +179,117 @@ The underwriting engine must remain geographically agnostic.
 Article 4 checks belong to a future area intelligence layer using local authority data, source attribution, and possibly PostGIS spatial lookups.
 
 Outputs from that layer may inform deal feasibility warnings, but must not alter historical financial calculations unless explicitly converted into user-visible assumptions.
+
+
+# ADR-009 — Assumption Provenance Is Required
+
+## Decision
+
+Every non-user-provided assumption used in underwriting must be traceable to a source, version, effective date, and verification timestamp.
+
+## Reasoning
+
+Property underwriting depends heavily on assumptions such as:
+
+* void rates
+* stress rates
+* insurance estimates
+* maintenance reserves
+* tax rates
+* area intelligence
+* planning constraints
+* lending assumptions
+
+Users must be able to understand:
+
+* where an assumption came from
+* when it was last verified
+* whether it was platform-generated or user-provided
+* whether it may be stale
+* whether the value was manually overridden
+
+This supports:
+
+* trust
+* auditability
+* historical reproducibility
+* explainability
+* enterprise-grade reporting
+
+---
+
+# ADR-010 — Explainability Is a Product Requirement
+
+## Decision
+
+Every user-facing calculation should eventually be explainable through a breakdown of formulas, assumptions, inputs, configuration versions, and triggered risk conditions.
+
+## Reasoning
+
+PropIQ is not only a calculator. It is a trust-first underwriting platform.
+
+Users should be able to understand:
+
+* why a result changed
+* why a risk flag triggered
+* which assumptions affected the outcome
+* which tax pathway applied
+* which configuration version produced the result
+
+Explainability must be designed into the platform architecture rather than added later as presentation-only logic.
+
+---
+
+# ADR-011 — Scenario Analysis Is a First-Class Capability
+
+## Decision
+
+The platform must eventually support scenario-based underwriting, including:
+
+* base scenarios
+* optimistic scenarios
+* pessimistic scenarios
+* stress-rate scenarios
+* refinance scenarios
+* exit/sale scenarios
+* BRRR scenarios
+* HMO conversion scenarios
+
+## Reasoning
+
+Professional property investors do not evaluate deals using one static result.
+
+They compare sensitivity across:
+
+* rent assumptions
+* interest rates
+* void periods
+* refurbishment costs
+* exit values
+* refinance assumptions
+* operating expenses
+
+Scenario support must be implemented without weakening snapshot immutability or historical reproducibility guarantees.
+
+---
+
+# ADR-012 — Regulatory Intelligence Is Separate From Financial Calculations
+
+## Decision
+
+Planning rules, Article 4 restrictions, HMO licensing, selective licensing, EPC regulations, conservation areas, and local authority overlays belong outside the deterministic underwriting engine.
+
+## Reasoning
+
+These are regulatory and spatial feasibility concerns, not deterministic financial formulas.
+
+They may create:
+
+* warnings
+* feasibility blockers
+* due diligence tasks
+* risk indicators
+
+However, they must not directly alter historical financial calculations unless explicitly converted into user-visible assumptions.
+
+The underwriting engine remains geographically agnostic and deterministic.

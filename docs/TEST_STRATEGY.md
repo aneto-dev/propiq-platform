@@ -1599,3 +1599,59 @@ fixtures and expected values here.
 The chain is intentionally strict. It is the mechanism by which the platform
 maintains trust in its calculations over time, as regulations change,
 assumptions are updated, and the engine evolves.
+
+## Repayment Mortgage Expected Value Verification
+
+Repayment mortgage calculations are high-risk because they depend on compound interest and amortisation behaviour.
+
+The expected values for repayment mortgage examples must not be guessed or copied from informal calculations.
+
+Before implementation, repayment mortgage reference values must be independently calculated and locked into ENGINE_CONTRACTS.md and TEST_STRATEGY.md using Decimal arithmetic.
+
+The previous draft repayment example is intentionally not authoritative until independently verified.
+
+Required action before coding:
+
+* calculate the repayment monthly payment using Decimal arithmetic
+* calculate year-one mortgage interest using the documented amortisation method
+* update ENGINE_CONTRACTS.md with the verified values
+* update TEST_STRATEGY.md with the same verified values
+* add a note explaining the calculation method
+
+No repayment mortgage test should be implemented until these expected values are corrected and aligned.
+
+---
+
+## Assumption Provenance Testing
+
+Future testing strategy must include validation of assumption provenance and source lineage.
+
+Tests should eventually verify:
+
+* source attribution persistence
+* effective date persistence
+* configuration version linkage
+* stale assumption detection
+* user override tracking
+* historical reproducibility after assumption updates
+* snapshot-to-assumption traceability
+
+These tests belong to the future intelligence and configuration layers rather than the deterministic underwriting engine itself.
+
+---
+
+## Explainability Validation Strategy
+
+Future platform testing should verify that user-visible calculations can be explained through deterministic breakdowns.
+
+Tests should eventually verify:
+
+* formula explanation consistency
+* risk flag explanation generation
+* configuration source visibility
+* assumption impact summaries
+* snapshot comparison explanations
+* user-visible audit trace generation
+
+Explainability tests must validate informational consistency without altering deterministic financial outputs.
+
