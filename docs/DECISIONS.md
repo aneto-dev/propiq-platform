@@ -293,3 +293,56 @@ They may create:
 However, they must not directly alter historical financial calculations unless explicitly converted into user-visible assumptions.
 
 The underwriting engine remains geographically agnostic and deterministic.
+
+# ADR-013 — User Overrides Always Take Precedence
+
+## Decision
+
+User-provided assumptions always override platform defaults, AI suggestions, and external data providers.
+
+## Reasoning
+
+The platform must never silently replace explicit user decisions.
+
+Priority order:
+
+1. User override
+2. Snapshot-stored value
+3. External verified provider
+4. Platform default
+5. AI-generated suggestion
+
+This hierarchy ensures:
+- trust
+- predictability
+- reproducibility
+- auditability
+
+AI outputs are advisory only and never authoritative.
+
+
+# ADR-014 — The Underwriting Engine Is the System of Record
+
+## Decision
+
+The deterministic underwriting engine is the authoritative source of financial truth within the platform.
+
+## Reasoning
+
+Frontend applications, AI summaries, dashboards, exports, and integrations may present or explain results, but they must not alter authoritative calculation outputs.
+
+Only the deterministic engine may produce:
+
+- official underwriting metrics
+- tax calculations
+- yield calculations
+- risk evaluation outputs
+- affordability calculations
+
+This architectural boundary protects:
+
+- trust
+- reproducibility
+- auditability
+- historical consistency
+- regulatory defensibility

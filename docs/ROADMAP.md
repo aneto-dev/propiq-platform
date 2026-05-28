@@ -227,3 +227,85 @@ Future implementations may eventually use:
 * local authority datasets
 * external regulatory APIs
 * cached area intelligence pipelines
+
+## Future Capability — Data Freshness and Staleness Detection
+
+The platform should eventually track freshness metadata for all external intelligence.
+
+Future functionality may include:
+
+- stale EPC warnings
+- outdated planning data warnings
+- assumption expiration tracking
+- lender criteria version tracking
+- cached intelligence expiration policies
+- automatic refresh pipelines
+- source revalidation jobs
+
+The platform must distinguish between:
+
+- authoritative current data
+- cached historical data
+- stale unverified data
+- user-overridden assumptions
+
+Users should always understand how recent external intelligence is.
+
+## Future Capability — Audit and Export Infrastructure
+
+Future platform versions should support exportable underwriting records.
+
+Potential export formats include:
+
+- PDF underwriting reports
+- lender-ready summaries
+- accountant exports
+- CSV exports
+- portfolio analytics exports
+- audit history exports
+
+Exports should include:
+
+- calculation inputs
+- assumptions
+- engine version
+- configuration version
+- triggered risk flags
+- snapshot identifiers
+- assumption provenance
+- generated timestamps
+
+Generated exports must remain reproducible from immutable snapshots.
+
+## Future Capability — Regulatory Rule Versioning
+
+Future platform versions should support versioned regulatory rule sets.
+
+Potential rule domains include:
+
+- SDLT thresholds
+- Section 24 behaviour
+- corporation tax rules
+- EPC legislation
+- HMO licensing requirements
+- local authority restrictions
+
+Historical snapshots must always remain linked to the regulatory rule set active at calculation time.
+
+Future recalculations may compare historical rules against current rules to identify regulatory drift.
+
+## Future Capability — Portfolio Entity Modelling
+
+Future portfolio functionality should support:
+
+- multiple ownership entities
+- SPV structures
+- grouped assets
+- refinancing chains
+- lender relationships
+- portfolio debt exposure
+- cross-collateralisation tracking
+- ownership attribution
+- portfolio-level stress testing
+
+Portfolio analytics must remain compatible with immutable deal snapshots.
