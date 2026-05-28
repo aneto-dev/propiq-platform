@@ -169,3 +169,13 @@ over rapid feature delivery.
 Incorrect calculations destroy trust faster than missing features.
 
 The underwriting engine is the core asset of the business.
+
+# ADR-008 — Article 4 Belongs Outside the Underwriting Engine
+
+Article 4 planning restrictions are regulatory/spatial feasibility concerns, not deterministic financial calculation rules.
+
+The underwriting engine must remain geographically agnostic.
+
+Article 4 checks belong to a future area intelligence layer using local authority data, source attribution, and possibly PostGIS spatial lookups.
+
+Outputs from that layer may inform deal feasibility warnings, but must not alter historical financial calculations unless explicitly converted into user-visible assumptions.

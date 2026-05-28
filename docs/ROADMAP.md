@@ -103,3 +103,20 @@ The platform remains:
 * underwriting-first,
 * trust-first,
 * and transparency-first.
+
+## Article 4 Direction Checks
+
+Future area intelligence must support Article 4 planning restriction checks.
+
+Article 4 is not part of the deterministic underwriting engine. It belongs to the future regulatory and spatial intelligence layer.
+
+The platform should eventually support:
+- Article 4 direction lookup by address/postcode
+- local authority source attribution
+- planning restriction warnings
+- HMO conversion feasibility checks
+- manual verification status
+- date last checked
+- source URL
+
+Article 4 results may influence deal risk flags or feasibility warnings, but must not be embedded inside core financial calculation formulas.
