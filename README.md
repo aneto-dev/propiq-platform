@@ -21,6 +21,33 @@ The underwriting engine is intentionally designed to remain independent from per
 
 ---
 
+# Why PropIQ Exists
+
+Most property investment tools:
+
+* oversimplify underwriting,
+* hide assumptions,
+* overstate profitability,
+* ignore regulatory risk,
+* lack historical reproducibility,
+* or behave like spreadsheets with UI layers.
+
+PropIQ is designed differently.
+
+The platform aims to become a trust-first investor operating system combining:
+
+* deterministic underwriting,
+* explainable financial analysis,
+* immutable historical snapshots,
+* regulatory intelligence,
+* portfolio analytics,
+* and operational workflow tooling.
+
+The goal is not only to calculate deals.
+
+The goal is to help investors make better long-term decisions using transparent and reproducible intelligence.
+
+
 # Core Principles
 
 ## Deterministic Calculations

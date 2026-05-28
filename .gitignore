@@ -27,3 +27,7 @@ node_modules/
 
 # Database
 *.sqlite3
+
+# macOS
+.DS_Store
+__MACOSX/

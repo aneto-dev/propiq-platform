@@ -27,6 +27,33 @@ Build the core trusted underwriting engine.
 * nationwide search
 * automated valuation
 
+# Strategic Platform Direction
+
+The platform evolves in layers.
+
+## Layer 1 — Deterministic Financial Truth
+
+The underwriting engine establishes authoritative financial calculations and immutable snapshots.
+
+## Layer 2 — Operational Workflow
+
+The platform evolves from calculator to investor workflow system.
+
+## Layer 3 — Intelligence & Explainability
+
+The platform introduces explainability, optimisation insights, and scenario analysis.
+
+## Layer 4 — Spatial & Regulatory Intelligence
+
+The platform incorporates geospatial, planning, licensing, and regulatory intelligence.
+
+## Layer 5 — Portfolio Operating System
+
+The platform expands toward portfolio analytics, operational monitoring, and long-term investor intelligence.
+
+Each layer must preserve deterministic financial trust boundaries established in earlier phases.
+
+
 ---
 
 # Phase 2 — Persistence & User Platform
