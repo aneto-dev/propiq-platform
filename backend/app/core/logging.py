@@ -16,7 +16,7 @@ is mandatory. Free-text log lines are not acceptable in production.
 
 import logging
 import sys
-from typing import Any
+from typing import Any, cast
 
 import structlog
 from structlog.types import EventDict, WrappedLogger
@@ -66,6 +66,8 @@ def configure_logging() -> None:
         structlog.processors.UnicodeDecoder(),
     ]
 
+    renderer: Any
+
     if settings.is_production or settings.environment == "staging":
         # Production/staging: render as JSON for log aggregation.
         # OBSERVABILITY_ARCHITECTURE.md Part 2.2: structured JSON to stdout.
@@ -105,4 +107,4 @@ def get_logger(name: str = __name__) -> structlog.stdlib.BoundLogger:
     The `event` kwarg corresponds to the dot-separated event taxonomy defined
     in OBSERVABILITY_ARCHITECTURE.md Part 3.2.
     """
-    return structlog.get_logger(name)
+    return cast(structlog.stdlib.BoundLogger, structlog.get_logger(name))

@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # Full asyncpg connection string.
     # Format: postgresql+asyncpg://user:password@host:port/dbname
     # The +asyncpg prefix is required by SQLAlchemy 2.0 async engine.
-    database_url: str
+    database_url: str = ""
 
     # Separate test database — never the same as database_url.
     # Used by pytest fixtures. Run against docker-compose.test.yml.
