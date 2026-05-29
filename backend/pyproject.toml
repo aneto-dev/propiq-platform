@@ -1,0 +1,135 @@
+[tool.poetry]
+name = "propiq-backend"
+version = "1.0.0"
+description = "PropIQ — UK property investment underwriting platform backend"
+authors = ["PropIQ"]
+readme = "README.md"
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+
+# ---- Web framework --------------------------------------------------
+# FastAPI: async Python web framework.
+# [standard] extra includes uvicorn, httpx, python-multipart.
+fastapi = { version = "^0.115", extras = ["standard"] }
+
+# ---- ASGI server ----------------------------------------------------
+# uvicorn: ASGI server for FastAPI.
+# [standard] extra includes uvloop (faster event loop) and watchfiles (--reload).
+uvicorn = { version = "^0.32", extras = ["standard"] }
+
+# ---- Database -------------------------------------------------------
+# SQLAlchemy 2.0 async ORM. [asyncio] extra required for AsyncSession.
+sqlalchemy = { version = "^2.0", extras = ["asyncio"] }
+
+# asyncpg: async PostgreSQL driver required by SQLAlchemy async mode.
+# Does NOT work with sync SQLAlchemy; this is intentional.
+asyncpg = "^0.30"
+
+# Alembic: database schema migration tool for SQLAlchemy.
+alembic = "^1.14"
+
+# ---- Validation and settings ----------------------------------------
+# Pydantic v2: data validation for API request/response DTOs.
+pydantic = "^2.10"
+
+# pydantic-settings: reads environment variables into typed Settings objects.
+# Used by app/core/config.py (APPLICATION_SERVICE_ARCHITECTURE.md).
+pydantic-settings = "^2.6"
+
+# ---- Authentication -------------------------------------------------
+# python-jose: JWT decoding and verification for Supabase Auth tokens.
+# [cryptography] extra required for RS256 signature verification.
+# AUTHORIZATION_MODEL.md Part 1: JWT verified using Supabase's public key.
+python-jose = { version = "^3.3", extras = ["cryptography"] }
+
+# httpx: async HTTP client used when fetching Supabase JWKS public key.
+httpx = "^0.28"
+
+# ---- Observability --------------------------------------------------
+# structlog: structured JSON logging.
+# OBSERVABILITY_ARCHITECTURE.md Part 2: all log output is structured JSON.
+structlog = "^24.4"
+
+[tool.poetry.group.dev.dependencies]
+# ---- Testing --------------------------------------------------------
+# pytest: test runner for all 5 test layers (TEST_STRATEGY.md Part 1).
+pytest = "^8.3"
+
+# pytest-asyncio: async test support for engine and repository tests.
+# asyncio_mode = "auto" set below means no @pytest.mark.asyncio required.
+pytest-asyncio = "^0.24"
+
+# pytest-cov: coverage reporting.
+pytest-cov = "^6.0"
+
+# anyio: async test utilities. trio backend used in some timeout tests.
+anyio = { version = "^4.6", extras = ["trio"] }
+
+# ---- Code quality ---------------------------------------------------
+# ruff: linter and formatter (replaces flake8, isort, black).
+ruff = "^0.8"
+
+# mypy: static type checking.
+# APPLICATION_SERVICE_ARCHITECTURE.md: make typecheck must pass on every commit.
+mypy = "^1.13"
+
+# sqlalchemy-stubs / mypy extension for SQLAlchemy type checking
+sqlalchemy = { version = "^2.0", extras = ["asyncio", "mypy"] }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# ============================================================
+# pytest configuration
+# ============================================================
+[tool.pytest.ini_options]
+# asyncio_mode = "auto": every async test function is treated as an
+# async test automatically. No @pytest.mark.asyncio decorator needed.
+# TEST_STRATEGY.md: all 5 test layers run on every commit.
+asyncio_mode = "auto"
+
+# Test discovery: look in the tests/ directory.
+testpaths = ["tests"]
+
+# Short traceback for cleaner output during TDD.
+# Override with -v or --tb=long when debugging.
+addopts = "--tb=short"
+
+# ============================================================
+# ruff configuration
+# ============================================================
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long — handled by formatter
+    "B008",  # do not perform function calls in default arguments (FastAPI pattern)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ============================================================
+# mypy configuration
+# ============================================================
+[tool.mypy]
+python_version = "3.13"
+strict = true
+# SQLAlchemy plugin for accurate ORM type checking.
+plugins = ["sqlalchemy.ext.mypy.plugin"]
+# Ignore missing stubs for third-party packages that don't ship them.
+ignore_missing_imports = true
