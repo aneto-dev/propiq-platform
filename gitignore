@@ -32,6 +32,9 @@ env/
 htmlcov/
 coverage.xml
 *.cover
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
 # mypy
 .mypy_cache/
