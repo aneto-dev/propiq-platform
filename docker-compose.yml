@@ -1,48 +1,51 @@
 services:
 
-  api:
-    build:
-      context: .
-      dockerfile: infrastructure/docker/api.Dockerfile
-
-    container_name: propiq-api
-
-    ports:
-      - "8000:8000"
-
-    env_file:
-      - .env
-
-    depends_on:
-      - postgres
-      - redis
-
-    volumes:
-      - .:/app
-
+  # ------------------------------------------------------------------
+  # PostgreSQL 16 + PostGIS 3.4 — development database
+  #
+  # Using the official postgis/postgis image so PostGIS is pre-bundled
+  # and the extension is available without manual installation.
+  # ADR-006: PostGIS enabled from Phase 1.
+  # ------------------------------------------------------------------
   postgres:
-    image: postgres:16
-
-    container_name: propiq-postgres
-
+    image: postgis/postgis:16-3.4
+    container_name: propiq_postgres
+    restart: unless-stopped
     environment:
+      POSTGRES_USER: propiq
+      POSTGRES_PASSWORD: propiq
       POSTGRES_DB: propiq
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-
     ports:
       - "5432:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U propiq -d propiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  redis:
-    image: redis:7
-
-    container_name: propiq-redis
-
+  # ------------------------------------------------------------------
+  # pgAdmin 4 — local database administration UI
+  # Access at http://localhost:5050
+  # Login: admin@propiq.com / propiq
+  # ------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:9
+    container_name: propiq_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@propiq.com
+      PGADMIN_DEFAULT_PASSWORD: propiq
+      PGADMIN_LISTEN_PORT: 5050
     ports:
-      - "6379:6379"
+      - "5050:5050"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:
+  pgadmin_data:
