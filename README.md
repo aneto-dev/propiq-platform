@@ -1,159 +1,104 @@
-# PropIQ Platform
+# PropIQ
 
-Production-grade UK property investment underwriting SaaS platform.
+Production-grade UK property investment analysis platform.
 
----
-
-# Vision
-
-PropIQ is a deterministic underwriting and investment analysis platform designed for UK property investors.
-
-The platform prioritises:
-
-* deterministic calculations,
-* immutable historical analysis,
-* explainable financial outputs,
-* versioned configuration,
-* auditability,
-* and long-term architectural stability.
-
-The underwriting engine is intentionally designed to remain independent from persistence, APIs, frontend frameworks, and AI systems.
+PropIQ helps investors evaluate deals using realistic underwriting,
+transparent assumptions, and historically reproducible calculations.
 
 ---
 
-# Why PropIQ Exists
+## Architecture
 
-Most property investment tools:
+Architecture documents are in `docs/`. The architecture is tagged
+`architecture-v1` and is frozen. Implementation follows
+`docs/IMPLEMENTATION_ROADMAP.md` commit-by-commit.
 
-* oversimplify underwriting,
-* hide assumptions,
-* overstate profitability,
-* ignore regulatory risk,
-* lack historical reproducibility,
-* or behave like spreadsheets with UI layers.
-
-PropIQ is designed differently.
-
-The platform aims to become a trust-first investor operating system combining:
-
-* deterministic underwriting,
-* explainable financial analysis,
-* immutable historical snapshots,
-* regulatory intelligence,
-* portfolio analytics,
-* and operational workflow tooling.
-
-The goal is not only to calculate deals.
-
-The goal is to help investors make better long-term decisions using transparent and reproducible intelligence.
-
-
-# Core Principles
-
-## Deterministic Calculations
-
-The same inputs and configuration versions must always produce the same outputs.
-
-## Immutable Historical Analysis
-
-Snapshots are append-only and never modified after creation.
-
-## Versioned Configuration
-
-Tax rules, assumptions, and platform configuration are versioned independently.
-
-## Explainability
-
-Every calculated output must be traceable to:
-
-* formulas,
-* assumptions,
-* configuration versions,
-* and risk evaluation rules.
-
-## AI Boundary Enforcement
-
-AI systems may consume underwriting outputs for commentary and insights.
-
-AI systems must never generate authoritative calculations.
+Key design principles:
+- **Trust first.** Calculations are deterministic, explainable, and
+  immutable once saved.
+- **Engine is core IP.** The underwriting engine is pure Python with
+  no I/O dependencies. It is independently testable.
+- **Explicit over implicit.** Every assumption is versioned and disclosed.
 
 ---
 
-# Current Architecture Status
+## Technology
 
-The platform is currently in the architecture and executable specification phase.
-
-The underwriting engine design, persistence philosophy, testing strategy, and service boundaries are being stabilised before implementation begins.
-
----
-
-# Documentation Map
-
-| Document                | Purpose                                            |
-| ----------------------- | -------------------------------------------------- |
-| ARCHITECTURE.md         | High-level platform architecture                   |
-| CALCULATION_SPEC.md     | Formal underwriting formulas and calculation rules |
-| DOMAIN_GLOSSARY.md      | Canonical domain terminology                       |
-| SCHEMA_ARCHITECTURE.md  | Conceptual domain schema design                    |
-| ENGINE_ARCHITECTURE.md  | Underwriting engine architecture                   |
-| SERVICE_ARCHITECTURE.md | Service layer and API architecture                 |
-| ENGINE_CONTRACTS.md     | Executable engine contracts                        |
-| TEST_STRATEGY.md        | Engine testing strategy                            |
-| DECISIONS.md            | Architectural decisions and invariants             |
-| ROADMAP.md              | Platform roadmap                                   |
-| PROJECT_CONTEXT.md      | Platform goals and constraints                     |
+| Layer       | Technology                        |
+|-------------|-----------------------------------|
+| Backend     | Python 3.12, FastAPI, SQLAlchemy 2 |
+| Database    | PostgreSQL 16 + PostGIS            |
+| Auth        | Supabase Auth                      |
+| Frontend    | Next.js 15, TypeScript, Tailwind   |
+| Hosting     | Railway                            |
 
 ---
 
-# Planned Phases
+## Local Development
 
-1. Architecture & Specifications
-2. Executable Contracts
-3. Persistence Design
-4. Underwriting Engine Implementation
-5. Service Layer & Persistence Wiring
-6. API Layer
-7. Frontend Platform
-8. Production Hardening
-9. AI & Intelligence Layer
-10. Scaling & Advanced Analytics
+### Prerequisites
 
----
+- Docker and Docker Compose
+- Python 3.12
+- Node.js 20+
 
-# Technology Direction
+### Setup
 
-## Backend
+```bash
+# 1. Clone and enter the repository
+git clone <repo>
+cd propiq
 
-* Python
-* FastAPI
-* PostgreSQL
-* SQLAlchemy
-* Alembic
+# 2. Copy environment file
+cp .env.example .env
+# Fill in Supabase values in .env
 
-## Frontend
+# 3. Start the database
+make dev-db
 
-* Next.js
-* TypeScript
+# 4. Install backend dependencies
+cd backend && pip install poetry && poetry install
 
-## Infrastructure
+# 5. Run migrations
+make migrate
 
-* Docker
-* Railway (Phase 1)
-* Future cloud portability
+# 6. Seed configuration data
+make seed
 
----
+# 7. Start the backend
+make dev-backend
 
-# Engineering Philosophy
+# 8. In another terminal, start the frontend
+make dev-frontend
+```
 
-* Design for operability, not just correctness
-* Preserve historical reproducibility
-* Treat calculations as trust-critical infrastructure
-* Prefer explicit contracts over implicit behaviour
-* Avoid premature optimisation
-* Keep architecture evolvable
+### Running Tests
+
+```bash
+make test
+```
 
 ---
 
-# Project Status
+## Development Workflow
 
-Architecture phase in active development.
+Every commit follows the rules in `docs/IMPLEMENTATION_ROADMAP.md`:
+
+1. `make test` must pass
+2. `make typecheck` must pass (mypy zero errors)
+3. `make lint` must pass (ruff zero errors)
+4. Commit message format: `type(scope): description`
+5. No new architecture decisions without an ADR update
+
+---
+
+## Repository Structure
+
+```
+propiq/
+├── backend/       FastAPI application, engine, repositories, services
+├── frontend/      Next.js application
+├── infrastructure/ Docker Compose, Railway config
+├── scripts/       Seed scripts and utilities
+└── docs/          Frozen architecture documents
+```
