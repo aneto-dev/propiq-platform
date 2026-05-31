@@ -20,7 +20,8 @@ Only stdlib imports. No application dependencies.
 from __future__ import annotations
 
 import uuid
-from typing import Any
+
+from app.engine.contracts import ValidationError, ValidationWarning
 
 
 class NotFoundError(Exception):
@@ -72,9 +73,8 @@ class CalculationValidationFailure(Exception):
     produced by the validation pipeline. The API layer serialises these as
     a field_errors list for the frontend to map to specific form fields.
 
-    hard_errors and warnings are typed as list here. They will be annotated
-    as list[ValidationError] and list[ValidationWarning] in Commit 2.1
-    when the engine contracts are defined.
+    hard_errors is list[ValidationError] and warnings is
+    list[ValidationWarning] from app.engine.contracts.
 
     Maps to HTTP 422.
 
@@ -85,11 +85,7 @@ class CalculationValidationFailure(Exception):
         )
     """
 
-    def __init__(
-    self,
-    hard_errors: list[Any],
-    warnings: list[Any],
-    ) -> None:
+    def __init__(self, hard_errors: list[ValidationError], warnings: list[ValidationWarning]) -> None:
         self.hard_errors = hard_errors
         self.warnings = warnings
         count = len(hard_errors)
