@@ -64,15 +64,6 @@ class Rate:
         if not isinstance(self.value, Decimal):
             object.__setattr__(self, "value", Decimal(str(self.value)))
 
-        # Validate non-negative. A negative percentage rate has no meaning
-        # in this domain. Check after coercion so the comparison is always
-        # Decimal vs Decimal.
-        if self.value < Decimal("0"):
-            raise ValueError(
-                f"Rate.value must be >= 0, got {self.value}. "
-                f"Negative percentage rates are not valid in this domain."
-            )
-
     def as_decimal_fraction(self) -> Decimal:
         """
         Return the rate as a decimal fraction for arithmetic use.
