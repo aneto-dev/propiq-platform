@@ -20,6 +20,7 @@ Only stdlib imports. No application dependencies.
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 
 class NotFoundError(Exception):
@@ -84,7 +85,11 @@ class CalculationValidationFailure(Exception):
         )
     """
 
-    def __init__(self, hard_errors: list, warnings: list) -> None:
+    def __init__(
+    self,
+    hard_errors: list[Any],
+    warnings: list[Any],
+    ) -> None:
         self.hard_errors = hard_errors
         self.warnings = warnings
         count = len(hard_errors)
