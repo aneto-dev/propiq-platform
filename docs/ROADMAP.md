@@ -1,338 +1,323 @@
 # PropIQ Platform — Roadmap
 
-# Phase 1 — Underwriting Engine Foundation
+---
 
-## Goals
+## Platform Identity
 
-Build the core trusted underwriting engine.
+PropIQ is an **Investor Operating System** for UK property investors.
 
-## Features
+Underwriting is the first capability — the foundation that earns trust —
+but it is not the final destination. PropIQ begins with underwriting and
+evolves into the system where investors manage their entire deal and portfolio
+lifecycle: from initial analysis through acquisition, hold, refinance, and exit.
 
-* purchase analysis
-* SDLT calculation
-* mortgage modelling
-* yield calculations
-* cash flow analysis
-* stress testing
-* Section 24 handling
-* calculation snapshots
-* assumption versioning
-* risk flags
+**Underwriting is the first shipped capability, not the product's identity.**
 
-## Non-Goals
-
-* maps
-* AI insights
-* property sourcing
-* nationwide search
-* automated valuation
-
-# Strategic Platform Direction
-
-The platform evolves in layers.
-
-## Layer 1 — Deterministic Financial Truth
-
-The underwriting engine establishes authoritative financial calculations and immutable snapshots.
-
-## Layer 2 — Operational Workflow
-
-The platform evolves from calculator to investor workflow system.
-
-## Layer 3 — Intelligence & Explainability
-
-The platform introduces explainability, optimisation insights, and scenario analysis.
-
-## Layer 4 — Spatial & Regulatory Intelligence
-
-The platform incorporates geospatial, planning, licensing, and regulatory intelligence.
-
-## Layer 5 — Portfolio Operating System
-
-The platform expands toward portfolio analytics, operational monitoring, and long-term investor intelligence.
-
-Each layer must preserve deterministic financial trust boundaries established in earlier phases.
-
+The underwriting engine establishes trust. The operating system builds retention.
+Every feature added after launch deepens the investor's operational usefulness
+within the platform.
 
 ---
 
-# Phase 2 — Persistence & User Platform
+## Strategic Layers
 
-## Features
+The platform is built in layers. Each layer preserves the trust boundaries
+established by all previous layers.
 
-* authentication
-* saved deals
-* deal history
-* portfolio management
-* analysis comparison
-* recalculation workflows
+```
+Layer 1 — Deterministic Financial Truth
+    The underwriting engine: authoritative calculations,
+    immutable snapshots, explicit assumptions, transparent risk flags.
+    This is what earns the right to charge.
 
----
+Layer 2 — Deal Operating System
+    The deal lifecycle: from analysis through acquisition, hold,
+    and exit. Operational tracking, mortgage expiry, actual vs
+    projected performance. This is what earns the right to retain.
 
-# Phase 3 — Area Intelligence
+Layer 3 — Intelligence and Explainability
+    Scenario analysis, sensitivity testing, regulatory intelligence,
+    explainability tooling. This is what earns the right to grow.
 
-## Features
+Layer 4 — Portfolio Intelligence
+    Portfolio analytics, refinance modelling, portfolio stress testing,
+    debt management. This is what earns enterprise pricing.
 
-* crime data
-* EPC integration
-* flood risk
-* school ratings
-* deprivation indices
-* licensing overlays
-* local authority enrichment
+Layer 5 — Platform and Ecosystem
+    AI-assisted insights, team collaboration, broker/accountant tooling,
+    lender integrations. This is what earns platform value.
+```
 
----
-
-# Phase 4 — Portfolio Analytics
-
-## Features
-
-* portfolio cash flow
-* refinance tracking
-* debt exposure
-* risk concentration
-* portfolio stress testing
+Each layer must preserve the deterministic trust boundaries established in
+earlier layers.
 
 ---
 
-# Phase 5 — AI-Assisted Insights
+## Phase 1 — Underwriting Foundation (first shipped capability)
 
-## Features
+### Goal
 
-* deal summaries
-* risk explanations
-* assumption interpretation
-* portfolio commentary
-* investor education
+Ship the most trusted underwriting tool available to UK property investors,
+framed as the foundation of an investor operating system.
+
+The first user experience is: **add a deal to your pipeline, analyse it.**
+The analysis is a step within the deal — not the end of the journey.
+
+### Features
+
+- Deal creation and pipeline management (DRAFT status)
+- Purchase analysis with full breakdown
+- SDLT calculation — banded, line-by-line, verifiable
+- Mortgage modelling (interest-only and repayment)
+- Yield calculations (gross and net)
+- Cash flow analysis (pre-tax and post-tax)
+- Section 24 handling — step-by-step display
+- Ltd Co vs personal comparison (two scenarios, same deal)
+- ICR stress testing
+- Calculation snapshots — immutable, attributed, versioned
+- Assumption versioning and provenance
+- Risk flags with explanations
+- Subscription gate (free tier: 3 deals, paid tier: unlimited)
+
+### Not in Phase 1
+
+- Maps
+- Area intelligence
+- AI insights
+- Workflow tracking beyond DRAFT/ANALYSED
+- Portfolio analytics
+- Mortgage expiry tracking
+- Actual vs projected performance
+
+### Phase 1 Exit Criteria
+
+- Investors can add a deal, analyse it, and trust the result
+- The analysis output is explainable line by line
+- A paying subscriber can save and return to their deals
+- The product is positioned and described as an investor operating system
+  where underwriting is the first capability, not the whole product
+
+---
+
+## Phase 2 — Retention Foundation (first reason to stay subscribed)
+
+### Goal
+
+Give subscribers a reason to return between deals and a reason not to cancel
+after purchasing a property.
+
+Without Phase 2, subscribers who purchase a property have no ongoing reason
+to be subscribed. Phase 2 fixes this.
+
+### Features
+
+**Deal lifecycle expansion**
+
+- Deal status tracking: Analysing → Offer Submitted → Purchased → Held → Exited
+- Status transitions visible in the UI from the deal page
+- Portfolio view: all deals by status
+
+**Mortgage expiry tracking**
+
+- Mortgage product end date field on purchased deals
+- 90-day and 30-day email reminders before expiry
+- Refinance modelling triggered from the expiry reminder
+
+**Actual vs projected performance**
+
+- Monthly actual rent field on held deals
+- Monthly actual costs field (optional, aggregated)
+- Variance display: actual vs original snapshot projection
+- Simple chart: projected cash flow vs actual over time
+
+**Portfolio summary**
+
+- Dashboard: number of properties held, aggregate projected vs actual cash flow
+- Total capital deployed across portfolio
+- Upcoming mortgage expiries
+
+### Retention anchors added by Phase 2
+
+These features give subscribers ongoing operational reasons to stay subscribed:
+
+1. **Mortgage expiry dates** — time-sensitive information tracked in one place;
+   users with upcoming expiries have an active reason to engage
+2. **Actual performance history** — accumulated month by month; the historical
+   record grows more valuable over time and is directly exportable for
+   accountancy and tax purposes
+3. **Deal pipeline** — the full lifecycle of active deals in one view; this
+   becomes the operational record of an investor's property business
+
+Users own all of their data. Export is supported. Retention comes from the
+accumulated value, operational convenience, and workflow integration that
+the platform provides — not from restricting access to user-owned records.
+
+### Phase 2 Exit Criteria
+
+- A subscriber who purchased a property 6 months ago returns monthly to
+  update their actual rent
+- A subscriber receives an email 90 days before their mortgage expires
+- The dashboard shows a meaningful portfolio summary for a 3-property investor
+
+---
+
+## Phase 3 — Depth (first reason to prefer PropIQ over alternatives)
+
+### Goal
+
+Add capabilities that competitors cannot easily replicate and that serve the
+analytical investor's deeper needs.
+
+### Features
+
+**Underwriting depth**
+
+- HMO analysis (per-room income modelling)
+- BRRR scenario modelling (purchase → refurb → refinance → hold)
+- Sensitivity analysis (what if rate rises 1%? what if void doubles?)
+- Scenario comparison (saved side-by-side)
+
+**Explainability layer**
+
+- Step-by-step calculation breakdown (why did this number come from?)
+- Assumption impact analysis (which input affects the result most?)
+- Section 24 visual explainer
+- PDF export (lender-ready, accountant-ready)
+
+**Area intelligence (first pass)**
+
+- Flood risk warning (Environment Agency — free API)
+- EPC rating lookup
+- Article 4 direction warnings by postcode
+
+### Phase 3 Exit Criteria
+
+- HMO investors use PropIQ for all deal analysis
+- Investors share PDF reports with brokers and accountants
+- Sensitivity analysis is used to model rate rise scenarios
+
+---
+
+## Phase 4 — Portfolio Intelligence
+
+### Goal
+
+Become the operational intelligence layer for investors with 5+ properties.
+
+### Features
+
+- Portfolio-level cash flow analysis
+- Debt maturity calendar (all mortgage expiries in one view)
+- Refinance pipeline tracking
+- Debt exposure and concentration risk
+- Portfolio stress testing (what happens to the portfolio if rates rise 2%?)
+- Equity tracking across portfolio
+- Capital recycling modelling (BRRR portfolio view)
+
+### Phase 4 Exit Criteria
+
+- Investors with 10+ properties rely on PropIQ for portfolio oversight
+- Refinance decisions are modelled in PropIQ before engaging a broker
+- Churn at month 12 is materially lower than month 6
+
+---
+
+## Phase 5 — AI and Platform
+
+### Goal
+
+Add AI-assisted insight and professional tooling without compromising the
+deterministic trust model.
+
+### Features
+
+**AI-assisted (advisory only, never authoritative)**
+
+- Deal summary in plain English
+- Risk flag explanations in context
+- "What does this mean for my situation?" — scenario interpretation
+- Portfolio commentary
+
+**Platform expansion**
+
+- Team/advisor access (accountant reads portfolio, broker models deals)
+- White-label investor report generation
+- API access for professional users
 
 AI remains:
-
-* non-authoritative,
-* explainable,
-* and secondary to deterministic calculations.
+- Non-authoritative
+- Explicitly labelled as advisory
+- Visually separate from deterministic calculation outputs
 
 ---
 
-# Long-Term Direction
+## Retention Ladder
 
-Potential future areas:
+Every new subscriber should be climbing this ladder. The further up the
+ladder a subscriber is, the lower their probability of cancellation.
 
-* lender integrations
-* broker workflows
-* refinancing alerts
-* planning intelligence
-* market trend analysis
-* professional investor tooling
-* mobile companion app
+```
+Rung 1 — ANALYSING      (Phase 1)
+  Has used the analysis tool. Has seen the output. Trusts the numbers.
+  Cancellation likelihood: Higher — operational value is still limited.
+
+Rung 2 — PURCHASED      (Phase 2)
+  Has marked a deal as Purchased. Has a real asset tracked in the system.
+  Cancellation likelihood: Reduced. Beginning to build operational history.
+
+Rung 3 — TRACKING       (Phase 2)
+  Updating actual rent monthly. Has accumulated performance history.
+  Cancellation likelihood: Materially lower. Accumulated data has real value.
+
+Rung 4 — EXPIRY AWARE   (Phase 2)
+  Has a mortgage expiry date in the system. Knows when to refinance.
+  Cancellation likelihood: Low. Time-sensitive information creates active
+  engagement before each expiry event.
+
+Rung 5 — PORTFOLIO      (Phase 4)
+  Has 3+ properties tracked. Portfolio analytics are meaningful.
+  Cancellation likelihood: Low. High operational switching cost;
+  portfolio history is exportable but not easily recreated in another tool.
+
+Rung 6 — OPERATIONALLY INTEGRATED (Phase 4-5)
+  Makes refinance decisions, portfolio decisions, and investor decisions
+  from within PropIQ. Accounting exports, broker sharing, team access.
+  Cancellation likelihood: Very low. Cancellation has meaningful operational
+  cost and disrupts established business workflows.
+```
+
+---
+
+## What This Roadmap Is Not
+
+- It is not a feature wishlist
+- It is not an analysis tool that adds operational features as an afterthought
+- It is not a race to build every feature before charging
+
+Every feature is evaluated against: **does this move subscribers up the
+retention ladder, or does it only attract them onto it?**
+
+Features that only attract (acquisition) are worth building after features
+that retain. The exception is Phase 1, where acquisition is necessary
+before retention is possible at all.
+
+---
+
+## Long-Term Direction
 
 The platform remains:
 
-* underwriting-first,
-* trust-first,
-* and transparency-first.
+- **Deal-first** — the Deal is the primary domain concept
+- **Trust-first** — calculations are deterministic, explainable, immutable
+- **Value-first** — every phase increases the operational usefulness of the subscription
+- **Transparency-first** — assumptions are explicit, versioned, and disclosed
 
-## Article 4 Direction Checks
+Future capabilities not yet scheduled:
 
-Future area intelligence must support Article 4 planning restriction checks.
-
-Article 4 is not part of the deterministic underwriting engine. It belongs to the future regulatory and spatial intelligence layer.
-
-The platform should eventually support:
-- Article 4 direction lookup by address/postcode
-- local authority source attribution
-- planning restriction warnings
-- HMO conversion feasibility checks
-- manual verification status
-- date last checked
-- source URL
-
-Article 4 results may influence deal risk flags or feasibility warnings, but must not be embedded inside core financial calculation formulas.
-
-## Future Capability — Assumption Provenance and Source Attribution
-
-The platform should eventually support detailed provenance tracking for all non-user-provided assumptions.
-
-Future functionality may include:
-
-* source provider tracking
-* source URLs
-* collection timestamps
-* last verified timestamps
-* confidence scoring
-* stale data warnings
-* assumption override tracking
-* user-visible source attribution
-* assumption change history
-
-This capability is important for:
-
-* trust
-* auditability
-* enterprise reporting
-* lender confidence
-* historical reproducibility
-
----
-
-## Future Capability — Explainability Layer
-
-Future platform versions should support explainable underwriting outputs.
-
-Users should eventually be able to understand:
-
-* why a risk flag triggered
-* why a metric changed
-* which assumptions affected the result
-* which tax pathway applied
-* which configuration versions were used
-* how outputs were derived
-
-Potential future features include:
-
-* calculation breakdown trees
-* assumption impact summaries
-* comparison explanations
-* audit exports
-* investor-ready reporting
-* lender-ready explanations
-
-AI-generated commentary must remain visually and architecturally separate from authoritative calculation outputs.
-
----
-
-## Future Capability — Scenario and Sensitivity Analysis
-
-The platform should eventually support scenario-based underwriting and sensitivity analysis.
-
-Potential scenario types include:
-
-* base case
-* optimistic case
-* pessimistic case
-* high-rate stress case
-* refinance case
-* BRRR case
-* HMO conversion case
-* exit/sale case
-
-Scenario analysis should support comparison across:
-
-* rent assumptions
-* interest rates
-* void periods
-* refurbishment costs
-* refinancing assumptions
-* operating costs
-* tax changes
-
-Each scenario should generate its own immutable snapshot record.
-
----
-
-## Future Capability — Regulatory and Spatial Intelligence
-
-Future area intelligence should eventually support:
-
-* Article 4 restrictions
-* HMO licensing
-* selective licensing
-* additional licensing
-* conservation areas
-* flood risk overlays
-* EPC restriction warnings
-* local authority planning overlays
-* planning feasibility warnings
-* postcode intelligence
-* geospatial deal analysis
-
-This intelligence belongs to a future regulatory and spatial intelligence layer rather than the deterministic underwriting engine.
-
-Future implementations may eventually use:
-
-* PostGIS
-* spatial indexing
-* local authority datasets
-* external regulatory APIs
-* cached area intelligence pipelines
-
-## Future Capability — Data Freshness and Staleness Detection
-
-The platform should eventually track freshness metadata for all external intelligence.
-
-Future functionality may include:
-
-- stale EPC warnings
-- outdated planning data warnings
-- assumption expiration tracking
-- lender criteria version tracking
-- cached intelligence expiration policies
-- automatic refresh pipelines
-- source revalidation jobs
-
-The platform must distinguish between:
-
-- authoritative current data
-- cached historical data
-- stale unverified data
-- user-overridden assumptions
-
-Users should always understand how recent external intelligence is.
-
-## Future Capability — Audit and Export Infrastructure
-
-Future platform versions should support exportable underwriting records.
-
-Potential export formats include:
-
-- PDF underwriting reports
-- lender-ready summaries
-- accountant exports
-- CSV exports
-- portfolio analytics exports
-- audit history exports
-
-Exports should include:
-
-- calculation inputs
-- assumptions
-- engine version
-- configuration version
-- triggered risk flags
-- snapshot identifiers
-- assumption provenance
-- generated timestamps
-
-Generated exports must remain reproducible from immutable snapshots.
-
-## Future Capability — Regulatory Rule Versioning
-
-Future platform versions should support versioned regulatory rule sets.
-
-Potential rule domains include:
-
-- SDLT thresholds
-- Section 24 behaviour
-- corporation tax rules
-- EPC legislation
-- HMO licensing requirements
-- local authority restrictions
-
-Historical snapshots must always remain linked to the regulatory rule set active at calculation time.
-
-Future recalculations may compare historical rules against current rules to identify regulatory drift.
-
-## Future Capability — Portfolio Entity Modelling
-
-Future portfolio functionality should support:
-
-- multiple ownership entities
-- SPV structures
-- grouped assets
-- refinancing chains
-- lender relationships
-- portfolio debt exposure
-- cross-collateralisation tracking
-- ownership attribution
-- portfolio-level stress testing
-
-Portfolio analytics must remain compatible with immutable deal snapshots.
+- Lender integrations
+- Broker collaboration workflows
+- Auction deal workflows
+- Commercial property analysis
+- Regulatory change monitoring and alerts
+- Mobile companion app
+- Enterprise multi-portfolio management

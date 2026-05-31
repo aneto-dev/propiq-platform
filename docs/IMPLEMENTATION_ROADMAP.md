@@ -27,14 +27,32 @@ introduced. Everything defined here already exists in the architecture documents
 
 ---
 
+## Product Identity
+
+PropIQ is an **Investor Operating System** for UK property investors.
+
+Underwriting is the first shipped capability, not the product's identity.
+The Deal is the primary domain concept. Users add deals to their pipeline
+and analyse them. They do not "run calculations."
+
+This framing is enforced in all UI copy, onboarding, and product communication
+from Phase 1 onwards — even before workflow, portfolio, and retention features
+are built.
+
+---
+
 ## The Vertical Slice Target
 
 The first working end-to-end path is:
 
 ```
-Create Property → Create Deal → Update Inputs → Run Calculation
-  → Create Snapshot → Retrieve Snapshot
+Add Deal to Pipeline → Enter Inputs → Analyse Deal
+  → View Analysis → Return to Deal
 ```
+
+The user journey is framed around the deal lifecycle, not the calculation.
+A deal starts in the pipeline. The analysis is a step inside the deal.
+The result is stored on the deal and retrievable at any time.
 
 Everything else is built toward this slice. No frontend polish, no admin UI,
 no configuration management UI, and no portfolio features until this slice
@@ -2189,7 +2207,7 @@ async function apiRequest<T>(
 ```
 frontend/app/(auth)/login/page.tsx
 frontend/app/(app)/layout.tsx         ← auth guard: redirect to login if no session
-frontend/app/(app)/dashboard/page.tsx  ← stub: "Welcome to PropIQ"
+frontend/app/(app)/dashboard/page.tsx  ← stub: deal pipeline — "Add your first deal" empty state
 frontend/components/ui/Button.tsx
 frontend/components/ui/Input.tsx
 ```
@@ -2238,7 +2256,11 @@ frontend/components/deal/DealStatusBadge.tsx
 
 **DealInputForm:** All required and optional calculation inputs. DRAFT deal
 auto-saves working inputs on blur (PATCH /api/v1/deals/{id}/inputs).
-"Analyse Deal" button calls POST /api/v1/calculations/.
+"Analyse this deal" button calls POST /api/v1/calculations/.
+
+The deal page header displays the deal label and status badge, not the
+property address alone. The user is working on a deal, not running a calculation.
+The analysis result is a step within the deal, not the final destination.
 
 **Dependencies:** Commit 7.4
 
@@ -2405,30 +2427,103 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 # Post-Phase 8 Roadmap
 
 After the vertical slice is deployed to staging, subsequent work follows
-the same commit-per-concern discipline. The next priorities in order:
+the same commit-per-concern discipline. Phases 9–12 are ordered by their
+impact on the retention ladder (see ROADMAP.md), not by technical convenience.
 
-**Immediate hardening (before any marketing or user onboarding):**
+---
+
+## Phase 9 — Hardening and Launch Readiness
+
+Before any marketing or user onboarding:
+
 1. Rate limiting on calculation endpoints
 2. Production error monitoring (Sentry or Axiom)
 3. Database backups configured on Railway
 4. HTTPS certificate (automatic on Railway)
 5. Investor profile creation and management UI
 6. Snapshot history list UI
+7. HMO analysis (per-room income modelling) — high-intent acquisition audience
+8. Ltd Co vs personal comparison view (two scenarios, same property, side by side)
+9. Admin configuration management routes (internal, no UI needed at launch)
+10. Recalculation with current assumptions (regulatory changes)
 
-**Phase 9 — Remaining Phase 1 features:**
-- Admin configuration management routes and UI
-- Recalculation with current assumptions
-- Reproduce original calculation (Variant B)
-- Deal archival UI
-- Property archival UI
+**Phase 9 exit criteria:** The first paying subscriber can complete the full
+journey and find meaningful value. The product is described as an investor
+operating system in all copy.
+
+---
+
+## Phase 10 — Retention Foundation
+
+**Goal:** Give subscribers a reason to return between deals and a concrete
+reason not to cancel after purchasing a property.
+
+These are the three retention anchors identified in the strategic review.
+They must be shipped within 60 days of the first paying subscriber.
+
+**Feature 1 — Deal status tracking**
+
+- Expand DealStatus enum: ANALYSING → OFFER_SUBMITTED → PURCHASED → HELD → EXITED
+- Status transition UI on the deal page
+- Portfolio view: all deals grouped by status
+- Deal count badges on the dashboard by status
+
+The architecture already accommodates this (DOMAIN_MODEL_ARCHITECTURE.md
+Part 4.4, Part 19.1). This is a migration + UI change, not an architecture
+change.
+
+**Feature 2 — Mortgage expiry tracking and reminders**
+
+- `mortgage_product_end_date` field on deals in PURCHASED/HELD status
+- Email reminder at 90 days and 30 days before expiry
+- Refinance prompt: "Your mortgage on [property] expires in 90 days.
+  Would you like to model a refinance?"
+- Scheduled job (background task) to check expiries daily
+
+This is the highest-retention feature per hour of build time in the
+entire roadmap. One field, one scheduled job, one email template.
+
+**Feature 3 — Actual vs projected performance tracking**
+
+- Monthly actual rent field on HELD deals
+- Monthly actual costs field (optional)
+- Variance display on the deal page: actual vs original snapshot projection
+- Portfolio dashboard: aggregate actual vs projected cash flow
+
+This creates user-owned accumulated performance data that becomes more
+valuable over time. It supports accountancy, tax preparation, and investment
+review — and gives subscribers a concrete, ongoing reason to engage with
+the platform each month.
+
+**Phase 10 exit criteria:** A subscriber who purchased a property 3 months
+ago has their actual rent recorded for each month. They have received a
+mortgage expiry reminder. Their portfolio dashboard shows meaningful data.
+
+---
+
+## Phase 11 — Underwriting Depth
+
+- Sensitivity analysis (rate rise scenarios, void period sensitivity)
+- Scenario comparison (saved side by side)
+- PDF export (lender-ready, accountant-ready)
+- BRRR scenario modelling (purchase → refurb → refinance → hold)
 - Snapshot comparison view
+- Reproduce original calculation (Variant B — full reproducibility verification)
 
-**Phase 10 — Operational readiness:**
+**Phase 11 exit criteria:** Investors share PropIQ analyses with their
+brokers and accountants. Word-of-mouth acquisition begins.
+
+---
+
+## Phase 12 — Operational Readiness
+
 - Structured log shipping to Axiom/Datadog
 - Alerting on TIER-1 metrics (engine errors, audit failures)
 - Load testing against staging
 - GDPR privacy policy and terms of service
-- User account deletion flow
+- User account deletion and data anonymisation flow
+- Deal archival UI
+- Property archival UI
 
 These phases use the same commit discipline defined in this document.
 Each commit has a single clear purpose and leaves the codebase in a
@@ -2449,6 +2544,8 @@ deployable state.
 | Railway/Supabase integration issues | Medium | Medium | Phase 8 is explicitly for deployment; vertical slice simple |
 | asyncpg connection pool exhaustion | Low at Phase 1 scale | Medium | Default pool size 5; monitored via metrics |
 | Test DB state contamination | Low (separate DB) | Medium | docker-compose.test.yml uses port 5433 |
+| Retention features delayed past Phase 10 | Medium | High | Phase 10 is time-boxed to 60 days post first paying subscriber; mortgage expiry is the single-highest-priority feature |
+| Calculator positioning drift | Low (documented decision) | High | Product copy and UI reviewed against operating system framing before each phase ships |
 
 ---
 

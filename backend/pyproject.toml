@@ -51,6 +51,7 @@ httpx = "^0.28"
 # structlog: structured JSON logging.
 # OBSERVABILITY_ARCHITECTURE.md Part 2: all log output is structured JSON.
 structlog = "^24.4"
+greenlet = "^3.5.1"
 
 [tool.poetry.group.dev.dependencies]
 # ---- Testing --------------------------------------------------------

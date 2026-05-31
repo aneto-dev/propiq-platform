@@ -1,275 +1,144 @@
-# PropIQ Platform — Project Context
+# PropIQ — Project Context
 
-## Project Vision
+## Product Vision
 
-PropIQ is a production-grade UK property investment analysis platform designed to help investors evaluate deals using realistic underwriting, transparent assumptions, and operationally trustworthy calculations.
+PropIQ is an Investor Operating System for UK property investors.
 
-The platform is not intended to provide financial advice or speculative predictions.
+Underwriting is the first shipped capability. The Deal is the primary
+domain concept. The platform evolves from deal analysis into the operational
+system where investors manage their entire investment lifecycle — from initial
+analysis through acquisition, hold, refinance, and exit.
 
-Its purpose is to:
-
-* model property deals accurately under stated assumptions,
-* surface hidden risks,
-* improve investor decision-making,
-* and provide reproducible analysis over time.
-
-The platform prioritises:
-
-* correctness,
-* transparency,
-* auditability,
-* maintainability,
-* and long-term trust.
+Retention is earned through workflow integration and accumulated operational
+value, not through feature novelty or data restriction.
 
 ---
 
-# Core Product Philosophy
+## Primary Domain Concept
 
-Most property investment calculators:
+The **Deal** is the central entity. Not the calculation, not the property,
+not the snapshot.
 
-* oversimplify,
-* hide assumptions,
-* overstate yields,
-* ignore realistic costs,
-* or silently change outputs over time.
+A deal represents an investment opportunity at any stage of its lifecycle.
+Analysis (underwriting) is a step within a deal. The result is stored on
+the deal and retrievable at any time.
 
-PropIQ intentionally takes the opposite approach.
-
-Every calculation must:
-
-* be deterministic,
-* be explainable,
-* disclose assumptions,
-* and remain historically reproducible.
-
-Saved deal analyses must never silently change when:
-
-* regulations change,
-* tax rules change,
-* assumptions change,
-* or engine logic changes.
-
-Historical analyses are immutable snapshots.
+Users add deals to their pipeline and analyse them.
+They do not "run calculations."
 
 ---
 
-# Engineering Principles
+## Architectural Principles
 
-## Trust First
+**Trust-first.** Calculations are deterministic, explainable, and immutable
+once saved. The underwriting engine is a pure function — no I/O, no AI,
+no side effects. Every calculation is reproducible from its stored inputs
+and configuration version.
 
-Trust is the platform's primary asset.
+**Engine independence.** The underwriting engine has zero dependency on any
+application infrastructure. It is independently testable and separately
+versioned.
 
-A fast feature that produces misleading outputs is worse than no feature.
+**Immutable snapshots.** Saved calculations are permanent records. They are
+never modified. Recalculation creates a new snapshot; the original is retained.
 
----
+**Append-only configuration.** Tax rates, SDLT bands, and assumption defaults
+are versioned records. Historical snapshots always reference the exact
+configuration active at calculation time.
 
-## Explicit Over Implicit
+**Explicit assumptions.** Every assumption is versioned, attributed, and
+visible to users. User overrides always take precedence over platform defaults.
 
-The system should avoid hidden logic and ambiguous terminology.
-
-Calculations, assumptions, and outputs should be understandable by:
-
-* developers,
-* investors,
-* and auditors.
-
----
-
-## Deterministic Calculations
-
-Core underwriting calculations must:
-
-* never rely on AI,
-* never produce non-deterministic outputs,
-* and always be testable.
-
-AI may assist with:
-
-* summaries,
-* explanations,
-* natural language interpretation,
-* and future insight generation.
-
-AI must never generate authoritative financial outputs.
+**Data ownership.** Users own their data. Export is supported. Retention
+comes from operational usefulness and accumulated value, not from restricting
+access.
 
 ---
 
-## Incremental Development
+## Technology Stack
 
-The platform should evolve in controlled phases.
-
-Each phase must:
-
-* be deployable,
-* maintainable,
-* and production-safe.
-
-Avoid large unbounded feature releases.
-
----
-
-## Versioned Assumptions
-
-All assumptions that may change over time must be versioned.
-
-Examples:
-
-* SDLT rates,
-* corporation tax rates,
-* stress test assumptions,
-* default void rates,
-* default maintenance assumptions.
-
-Configuration data is never overwritten.
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.13, FastAPI, SQLAlchemy 2.0 async |
+| Database | PostgreSQL 16 + PostGIS |
+| Migrations | Alembic |
+| Validation | Pydantic v2 |
+| Auth | Supabase Auth (JWT, RS256) |
+| Frontend | Next.js 15, TypeScript 5, Tailwind CSS 4 |
+| Hosting | Railway |
+| Testing | pytest, pytest-asyncio |
 
 ---
 
-# Technical Stack
+## Authoritative Documents
 
-## Frontend
+All architecture is frozen at tag `architecture-v1`. The following documents
+are the source of truth:
 
-* Next.js
-* TypeScript
-* Tailwind CSS
+| Document | Covers |
+|---|---|
+| ARCHITECTURE.md | System overview |
+| DOMAIN_MODEL_ARCHITECTURE.md | Entities, aggregates, value objects |
+| ENGINE_CONTRACTS.md | Engine input/output contracts, reference scenarios |
+| CALCULATION_SPEC.md | Formula definitions, tax pathways, validation rules |
+| DATABASE_SCHEMA_DESIGN.md | All Phase 1 table definitions |
+| PERSISTENCE_ARCHITECTURE.md | Immutability, versioning, transaction rules |
+| REPOSITORY_ARCHITECTURE.md | Repository interfaces and patterns |
+| APPLICATION_SERVICE_ARCHITECTURE.md | Service responsibilities and flow |
+| AUTHORIZATION_MODEL.md | Authentication, ownership, permissions |
+| OBSERVABILITY_ARCHITECTURE.md | Logging, metrics, alerting |
+| IMPLEMENTATION_ROADMAP.md | Commit-by-commit execution plan |
+| ROADMAP.md | Product phases and retention strategy |
+| GROWTH_AND_PLATFORM_DIRECTION.md | Platform positioning and growth |
+| CUSTOMER_VALUE_AND_RETENTION_CHALLENGE.md | Retention review framework |
 
-## Backend
-
-* FastAPI
-* Python
-
-## Database
-
-* PostgreSQL
-* PostGIS enabled from early phases
-
-## Authentication
-
-* Supabase Auth
-
-## Infrastructure
-
-* Railway initially
-* Docker-based local development
-
-## Mapping
-
-* Mapbox (future phases)
+No new architecture decisions are introduced during implementation.
+Changes to behaviour require an ADR update in DECISIONS.md first.
 
 ---
 
-# Architectural Direction
+## Strategic Priorities
 
-The underwriting engine is the core intellectual property of the platform.
+**Phase 1 (current):** Ship the most trusted underwriting capability
+available to UK BTL investors. Establish the Deal as the primary concept
+from day one.
 
-The architecture should strongly separate:
+**Phase 2 (post-launch, within 60 days of first paying subscriber):**
+Ship the three retention anchors:
+1. Deal status tracking (Analysing → Purchased → Held → Exited)
+2. Mortgage expiry tracking and email reminders
+3. Actual vs projected rent performance tracking
 
-* domain logic,
-* infrastructure,
-* persistence,
-* API contracts,
-* and presentation layers.
-
-The system should support:
-
-* future mobile apps,
-* background jobs,
-* event-driven processing,
-* versioned calculations,
-* and future enrichment datasets.
+**Phases 3–5:** Underwriting depth, portfolio intelligence, AI-assisted
+insights. Sequenced by retention impact, not technical convenience.
 
 ---
 
-# Phase Strategy
+## Current Implementation Status
 
-## Phase 1
+Implementation began at tag `implementation-v1`.
 
-Core underwriting engine.
+| Roadmap Commit | Status | Notes |
+|---|---|---|
+| 0.1 — Monorepo skeleton | ✅ Complete | .gitignore, README, Makefile, dirs |
+| 0.2 — Docker Compose | ✅ Complete | Verified: PostGIS 3.4 running |
+| 0.3 — Python project | ✅ Complete | pyproject.toml, .python-version |
+| 0.4 — FastAPI skeleton | ✅ Complete | main.py, config, logging, health endpoint |
+| 0.5 — Alembic infrastructure | ✅ Complete | alembic.ini, env.py, base.py, session.py |
+| 0.6 — Makefile and setup script | ⚠️ Partial | Makefile and setup_dev.sh exist but were produced out-of-sequence; user confirmed 0.6 as next target |
 
-Focus:
+**Next commit:** 0.6 — `chore: makefile targets for dev workflow`
 
-* deal analysis,
-* yield calculations,
-* cash flow,
-* stress testing,
-* tax handling,
-* snapshots,
-* reproducibility.
-
-No advanced maps or intelligence yet.
-
----
-
-## Phase 2
-
-Deal persistence and portfolio tracking.
+See the Alignment Report for full detail.
 
 ---
 
-## Phase 3
+## Definition of Done (per commit)
 
-Area intelligence:
-
-* crime,
-* EPC,
-* flood risk,
-* schools,
-* council/licensing data.
-
----
-
-## Phase 4
-
-Portfolio analytics and monitoring.
-
----
-
-## Phase 5
-
-AI-assisted summaries and insight generation.
-
-AI remains non-authoritative.
-
----
-
-# Important Constraints
-
-The platform:
-
-* is not a mortgage recommendation engine,
-* is not regulated financial advice,
-* does not guarantee investment outcomes,
-* and should avoid misleading certainty language.
-
-Avoid terms like:
-
-* "safe investment"
-* "guaranteed return"
-* "best area"
-* "high confidence prediction"
-
-Use:
-
-* estimated,
-* projected,
-* modelled,
-* based on assumptions,
-* historical reference,
-* indicative only.
-
----
-
-# Current Development Focus
-
-Current focus:
-
-* stabilising domain language,
-* underwriting terminology,
-* versioning strategy,
-* schema architecture,
-* and calculation specifications.
-
-Implementation begins only after:
-
-* terminology,
-* assumptions,
-* and architecture are stable.
+1. `make test` passes
+2. `make typecheck` passes (mypy, zero errors)
+3. `make lint` passes (ruff, zero errors)
+4. Commit message format: `type(scope): description`
+5. No TODO comments
+6. No test expected values derived from the formula being tested
+7. No new architecture decisions without an ADR update
