@@ -7,8 +7,6 @@ Source: CALCULATION_SPEC.md F-04.
 
 from decimal import Decimal
 
-import pytest
-
 from app.engine.calculations.formulas import f04_loan_amount
 
 

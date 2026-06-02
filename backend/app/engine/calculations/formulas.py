@@ -19,9 +19,9 @@ CALCULATION_SPEC.md is the authoritative source for every formula.
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import NamedTuple
 
 from app.domain.enums import MortgageType
-
 
 # ---------------------------------------------------------------------------
 # F-01 — Gross Annual Rent
@@ -315,3 +315,349 @@ def f08_annual_mortgage_interest(
         balance -= capital_repaid
 
     return total_interest
+
+# ── ADDITIONS to formulas.py ─────────────────────────────────────────────────
+# Append these functions after f08_annual_mortgage_interest in formulas.py.
+# ---------------------------------------------------------------------------
+# F-09 — Letting Agent Annual Cost
+# CALCULATION_SPEC.md F-09:
+# letting_agent_annual = gross_annual_rent × (fee_pct / 100) × (1 + vat_pct / 100)
+#
+# Applied to gross_annual_rent (contractual rent), not effective_annual_rent.
+# Most management contracts charge on rent due, not rent received.
+# See CALCULATION_SPEC.md F-09 realism note.
+# ---------------------------------------------------------------------------
+
+
+def f09_letting_agent_annual(
+    gross_annual_rent: Decimal,
+    letting_agent_fee_percent: Decimal,
+    letting_agent_vat_rate_percent: Decimal,
+) -> Decimal:
+    """
+    Annual letting agent management fee including VAT.
+
+    letting_agent_annual = gross_annual_rent
+                           × (letting_agent_fee_percent / 100)
+                           × (1 + letting_agent_vat_rate_percent / 100)
+
+    Applied to gross_annual_rent (contractual rent due), not effective_annual_rent.
+    Residential landlords cannot reclaim VAT on management fees.
+    VAT rate is taken from configuration — never hardcoded.
+
+    Args:
+        gross_annual_rent: Output of F-01 (monthly_rent × 12).
+        letting_agent_fee_percent: Management fee as a percentage (e.g. 10.0).
+        letting_agent_vat_rate_percent: VAT rate as a percentage (e.g. 20.0).
+
+    Returns:
+        Annual letting agent cost in GBP at full precision.
+    """
+    fee_decimal = letting_agent_fee_percent / Decimal("100")
+    vat_multiplier = Decimal("1") + (letting_agent_vat_rate_percent / Decimal("100"))
+    return gross_annual_rent * fee_decimal * vat_multiplier
+
+
+# ---------------------------------------------------------------------------
+# F-10 — Annual Maintenance Reserve
+# CALCULATION_SPEC.md F-10:
+# annual_maintenance_reserve = purchase_price × (maintenance_reserve_percent / 100)
+# ---------------------------------------------------------------------------
+
+
+def f10_annual_maintenance_reserve(
+    purchase_price: Decimal,
+    maintenance_reserve_percent: Decimal,
+) -> Decimal:
+    """
+    Annual maintenance reserve as a percentage of purchase price.
+
+    annual_maintenance_reserve = purchase_price × (maintenance_reserve_percent / 100)
+
+    A smoothed annual reserve for repairs and maintenance. Does not model
+    major capital items (roof, boiler). Users are shown this limitation.
+
+    Args:
+        purchase_price: Agreed purchase price in GBP.
+        maintenance_reserve_percent: Reserve rate as a percentage (e.g. 1.0).
+
+    Returns:
+        Annual maintenance reserve in GBP at full precision.
+    """
+    return purchase_price * (maintenance_reserve_percent / Decimal("100"))
+
+
+# ---------------------------------------------------------------------------
+# F-11 — Total Annual Operating Costs
+# CALCULATION_SPEC.md F-11: sum of six recurring annual cost components.
+# One-off acquisition costs (SDLT, legal, refurb) are excluded.
+# ---------------------------------------------------------------------------
+
+
+def f11_total_operating_costs(
+    letting_agent_annual: Decimal,
+    annual_maintenance_reserve: Decimal,
+    landlord_insurance_annual: Decimal,
+    annual_service_charge: Decimal,
+    annual_ground_rent: Decimal,
+    annual_accountancy_cost: Decimal,
+) -> Decimal:
+    """
+    Total recurring annual operating costs.
+
+    total_operating_costs =
+        letting_agent_annual
+      + annual_maintenance_reserve
+      + landlord_insurance_annual
+      + annual_service_charge
+      + annual_ground_rent
+      + annual_accountancy_cost
+
+    Excludes one-off acquisition costs (SDLT, legal fees, refurbishment).
+    All six components must be provided; use Decimal("0") for absent items.
+
+    Args:
+        letting_agent_annual: Output of F-09.
+        annual_maintenance_reserve: Output of F-10.
+        landlord_insurance_annual: From EngineInput (user or config default).
+        annual_service_charge: From EngineInput (0 for freehold).
+        annual_ground_rent: From EngineInput (0 for freehold).
+        annual_accountancy_cost: From EngineInput (user or config default).
+
+    Returns:
+        Total annual operating costs in GBP at full precision.
+    """
+    return (
+        letting_agent_annual
+        + annual_maintenance_reserve
+        + landlord_insurance_annual
+        + annual_service_charge
+        + annual_ground_rent
+        + annual_accountancy_cost
+    )
+
+
+# ---------------------------------------------------------------------------
+# F-12 — Net Operating Income (NOI)
+# CALCULATION_SPEC.md F-12:
+# net_operating_income = effective_annual_rent − total_operating_costs_annual
+# ---------------------------------------------------------------------------
+
+
+def f12_net_operating_income(
+    effective_annual_rent: Decimal,
+    total_operating_costs: Decimal,
+) -> Decimal:
+    """
+    Net operating income — financing-neutral, tax-neutral.
+
+    net_operating_income = effective_annual_rent - total_operating_costs
+
+    Represents the income-generating performance of the asset independent
+    of how it is financed or owned. May be negative if costs exceed rent.
+
+    Args:
+        effective_annual_rent: Output of F-03.
+        total_operating_costs: Output of F-11.
+
+    Returns:
+        NOI in GBP at full precision. May be negative.
+    """
+    return effective_annual_rent - total_operating_costs
+
+
+# ---------------------------------------------------------------------------
+# F-13 — SDLT Calculation
+# CALCULATION_SPEC.md F-13: progressive banded calculation + flat surcharge.
+#
+# Return type: SDLTResult NamedTuple defined below.
+# Band inputs: plain tuples of (band_lower, band_upper|None, rate) as Decimal.
+# The orchestrator unpacks SDLTBand objects into this plain-tuple format
+# before calling this function, keeping formulas.py import-free from
+# app.engine.contracts. (ENGINE_ARCHITECTURE.md — calculations has no
+# engine-internal dependencies.)
+# ---------------------------------------------------------------------------
+
+
+class SDLTBandCalculation(NamedTuple):
+    """
+    Per-band result from the SDLT calculation.
+
+    All values are Decimal. rate is a decimal fraction (e.g. 0.02 for 2%).
+    band_upper is None for the top band.
+
+    This type is defined in formulas.py to keep the calculations submodule
+    free from imports of app.engine.contracts or app.domain.
+    The orchestrator maps SDLTBandCalculation → SDLTBandResult (contracts)
+    when assembling EngineIntermediates.
+    """
+
+    band_lower: Decimal
+    band_upper: Decimal | None
+    rate: Decimal
+    taxable_in_band: Decimal
+    tax_in_band: Decimal
+
+
+class SDLTResult(NamedTuple):
+    """
+    Complete result of the SDLT calculation (F-13).
+
+    sdlt_base, sdlt_surcharge, and total_sdlt are all rounded to 2dp.
+    band_breakdown contains every band where taxable_in_band > 0,
+    ordered ascending by band_lower.
+
+    total_sdlt = sdlt_base + sdlt_surcharge.
+    sum(b.tax_in_band for b in band_breakdown) == sdlt_base (verified by tests).
+    """
+
+    sdlt_base: Decimal
+    sdlt_surcharge: Decimal
+    total_sdlt: Decimal
+    band_breakdown: tuple[SDLTBandCalculation, ...]
+
+
+def f13_sdlt(
+    purchase_price: Decimal,
+    bands: tuple[tuple[Decimal, Decimal | None, Decimal], ...],
+    additional_dwelling_surcharge_rate: Decimal,
+    is_additional_dwelling: bool,
+) -> SDLTResult:
+    """
+    SDLT calculation — progressive banded rate structure plus optional surcharge.
+
+    Base calculation (all purchases):
+        For each band where band_lower < purchase_price:
+            taxable_in_band = MIN(purchase_price, band_upper) - band_lower
+            tax_in_band     = taxable_in_band × rate
+        sdlt_base = SUM(tax_in_band for all applicable bands)
+
+    Additional dwelling surcharge (when is_additional_dwelling = True):
+        sdlt_surcharge = purchase_price × additional_dwelling_surcharge_rate
+
+    Total:
+        total_sdlt = sdlt_base + sdlt_surcharge
+
+    SDLT rates and thresholds are NEVER hardcoded. They come from the versioned
+    configuration passed by the orchestrator. This function is configuration-
+    agnostic — it works for any banded structure.
+
+    Args:
+        purchase_price: Agreed purchase price in GBP.
+        bands: Ordered tuple of (band_lower, band_upper|None, rate) tuples.
+               rate is a decimal fraction (e.g. Decimal("0.02") for 2%).
+               band_upper is None for the top band.
+        additional_dwelling_surcharge_rate: Decimal fraction (e.g. 0.03 for 3%).
+        is_additional_dwelling: True applies the surcharge to the full price.
+
+    Returns:
+        SDLTResult with sdlt_base, sdlt_surcharge, total_sdlt, band_breakdown.
+    """
+    sdlt_base = Decimal("0")
+    band_results: list[SDLTBandCalculation] = []
+
+    for band_lower, band_upper, rate in bands:
+        if purchase_price <= band_lower:
+            break
+        # Taxable amount in this band
+        upper = band_upper if band_upper is not None else purchase_price
+        taxable = min(purchase_price, upper) - band_lower
+        tax = taxable * rate
+        band_results.append(
+            SDLTBandCalculation(
+                band_lower=band_lower,
+                band_upper=band_upper,
+                rate=rate,
+                taxable_in_band=taxable,
+                tax_in_band=tax,
+            )
+        )
+        sdlt_base += tax
+
+    sdlt_surcharge = (
+        purchase_price * additional_dwelling_surcharge_rate
+        if is_additional_dwelling
+        else Decimal("0")
+    )
+    total_sdlt = sdlt_base + sdlt_surcharge
+
+    return SDLTResult(
+        sdlt_base=sdlt_base,
+        sdlt_surcharge=sdlt_surcharge,
+        total_sdlt=total_sdlt,
+        band_breakdown=tuple(band_results),
+    )
+
+
+# ---------------------------------------------------------------------------
+# F-14 — Total Acquisition Cost
+# CALCULATION_SPEC.md F-14:
+# total_acquisition_cost = purchase_price + total_sdlt
+#                          + purchase_legal_costs + refurbishment_cost
+# ---------------------------------------------------------------------------
+
+
+def f14_total_acquisition_cost(
+    purchase_price: Decimal,
+    total_sdlt: Decimal,
+    purchase_legal_costs: Decimal,
+    refurbishment_cost: Decimal,
+) -> Decimal:
+    """
+    Total acquisition cost — all one-time costs to purchase and prepare.
+
+    total_acquisition_cost = purchase_price
+                             + total_sdlt
+                             + purchase_legal_costs
+                             + refurbishment_cost
+
+    Args:
+        purchase_price: Agreed purchase price in GBP.
+        total_sdlt: Output of F-13 (SDLTResult.total_sdlt).
+        purchase_legal_costs: Conveyancing and survey fees.
+        refurbishment_cost: One-off pre-let costs (may be 0).
+
+    Returns:
+        Total acquisition cost in GBP at full precision.
+    """
+    return purchase_price + total_sdlt + purchase_legal_costs + refurbishment_cost
+
+
+# ---------------------------------------------------------------------------
+# F-15 — Total Cash Deployed
+# CALCULATION_SPEC.md F-15:
+# total_cash_deployed = deposit_amount + total_sdlt
+#                       + purchase_legal_costs + refurbishment_cost
+#
+# The loan amount is excluded. total_cash_deployed represents the investor's
+# own cash outlay — the denominator in cash-on-cash return and ROCE.
+# ---------------------------------------------------------------------------
+
+
+def f15_total_cash_deployed(
+    deposit_amount: Decimal,
+    total_sdlt: Decimal,
+    purchase_legal_costs: Decimal,
+    refurbishment_cost: Decimal,
+) -> Decimal:
+    """
+    Total investor cash deployed — own capital only, loan excluded.
+
+    total_cash_deployed = deposit_amount
+                          + total_sdlt
+                          + purchase_legal_costs
+                          + refurbishment_cost
+
+    The mortgage loan is excluded because it is not the investor's own cash.
+    This figure is the denominator in cash-on-cash return (F-21) and ROCE (F-18).
+
+    Args:
+        deposit_amount: Investor cash deposit (purchase_price - loan_amount).
+        total_sdlt: Output of F-13.
+        purchase_legal_costs: Conveyancing and survey fees.
+        refurbishment_cost: One-off pre-let costs (may be 0).
+
+    Returns:
+        Total cash deployed in GBP at full precision.
+    """
+    return deposit_amount + total_sdlt + purchase_legal_costs + refurbishment_cost

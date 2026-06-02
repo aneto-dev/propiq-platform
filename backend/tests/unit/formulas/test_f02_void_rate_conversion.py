@@ -7,8 +7,6 @@ Source: CALCULATION_SPEC.md F-02.
 
 from decimal import Decimal
 
-import pytest
-
 from app.engine.calculations.formulas import f02_void_rate_decimal
 
 

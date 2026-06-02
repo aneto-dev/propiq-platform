@@ -5,12 +5,9 @@ Formula: ltv_percent = (loan_amount / purchase_price) × 100
 Source: CALCULATION_SPEC.md F-05.
 """
 
-from decimal import Decimal, ROUND_HALF_UP
-
-import pytest
+from decimal import ROUND_HALF_UP, Decimal
 
 from app.engine.calculations.formulas import f05_ltv_percent
-
 
 TWO_DP = Decimal("0.01")
 

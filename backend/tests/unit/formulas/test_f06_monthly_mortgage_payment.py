@@ -9,13 +9,10 @@ Two pathways:
 Source: CALCULATION_SPEC.md F-06.
 """
 
-from decimal import Decimal, ROUND_HALF_UP
-
-import pytest
+from decimal import ROUND_HALF_UP, Decimal
 
 from app.domain.enums import MortgageType
 from app.engine.calculations.formulas import f06_monthly_mortgage_payment
-
 
 TWO_DP = Decimal("0.01")
 

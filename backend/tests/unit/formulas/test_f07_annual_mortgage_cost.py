@@ -7,8 +7,6 @@ Source: CALCULATION_SPEC.md F-07.
 
 from decimal import Decimal
 
-import pytest
-
 from app.engine.calculations.formulas import f07_annual_mortgage_cost
 
 

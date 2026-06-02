@@ -7,8 +7,6 @@ Source: CALCULATION_SPEC.md F-01.
 
 from decimal import Decimal
 
-import pytest
-
 from app.engine.calculations.formulas import f01_gross_annual_rent
 
 

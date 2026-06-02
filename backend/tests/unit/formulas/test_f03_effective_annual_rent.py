@@ -5,12 +5,9 @@ Formula: effective_annual_rent = gross_annual_rent × (1 - void_rate_decimal)
 Source: CALCULATION_SPEC.md F-03.
 """
 
-from decimal import Decimal, ROUND_HALF_UP
-
-import pytest
+from decimal import ROUND_HALF_UP, Decimal
 
 from app.engine.calculations.formulas import f03_effective_annual_rent
-
 
 TWO_DP = Decimal("0.01")
 

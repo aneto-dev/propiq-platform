@@ -16,9 +16,7 @@ Repayment (year 1 approximation):
 Source: CALCULATION_SPEC.md F-08.
 """
 
-from decimal import Decimal, ROUND_HALF_UP
-
-import pytest
+from decimal import ROUND_HALF_UP, Decimal
 
 from app.domain.enums import MortgageType
 from app.engine.calculations.formulas import (
@@ -26,7 +24,6 @@ from app.engine.calculations.formulas import (
     f07_annual_mortgage_cost,
     f08_annual_mortgage_interest,
 )
-
 
 TWO_DP = Decimal("0.01")
 
