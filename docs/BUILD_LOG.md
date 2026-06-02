@@ -141,6 +141,13 @@ F-09 formula and all other scenarios (E-05, E-06) confirm fee applied to
 `gross_annual_rent`. CALCULATION_SPEC.md governs. Implementation uses
 gross_annual_rent. Documented in `test_applied_to_gross_not_effective`.
 
+**Post-commit ruff fix applied:** `from typing import NamedTuple` was placed
+mid-file in the F-09–F-15 additions. Ruff E402 flagged it as a module-level
+import not at the top of the file. Fixed by moving it to the imports block.
+`ruff --fix` resolved 42 of 43 errors automatically; the E402 was fixed
+manually. Final state: `ruff check app/ tests/` → All checks passed.
+`pytest tests/unit/formulas/ -v` → 101 passed.
+
 **SDLT boundary tests:** All 12 boundary values (£100k through £2m) verified
 against HMRC methodology. E-01/E-03/E-05 cross-reference cases confirmed.
 
@@ -148,7 +155,7 @@ against HMRC methodology. E-01/E-03/E-05 cross-reference cases confirmed.
 
 ### Commit 2.4 — Formulas F-16 through F-22
 
-**Status:** ⏳ Planned — implementation plan below
+**Status:** ⏳ Planned — see implementation plan
 
 ---
 
