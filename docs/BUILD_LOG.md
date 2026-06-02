@@ -155,7 +155,90 @@ against HMRC methodology. E-01/E-03/E-05 cross-reference cases confirmed.
 
 ### Commit 2.4 — Formulas F-16 through F-22
 
-**Status:** ⏳ Planned — see implementation plan
+**Message:** `feat(engine): yield, return, and stress test formulas F-16 through F-22`
+**Status:** ✅ Complete
+**Tests added:** 42 | **Running total:** 189
+
+**Files modified:**
+- `backend/app/engine/calculations/formulas.py` — 8 functions appended
+
+**Files created:**
+- `backend/tests/unit/formulas/test_f16_gross_yield.py` (5 tests)
+- `backend/tests/unit/formulas/test_f17_net_yield.py` (5 tests)
+- `backend/tests/unit/formulas/test_f18_roce.py` (5 tests)
+- `backend/tests/unit/formulas/test_f19_annual_cash_flow.py` (6 tests)
+- `backend/tests/unit/formulas/test_f20_monthly_cash_flow.py` (5 tests)
+- `backend/tests/unit/formulas/test_f21_cash_on_cash.py` (5 tests)
+- `backend/tests/unit/formulas/test_f22_icr.py` (11 tests)
+
+**Functions:** `f16_gross_yield_percent`, `f17_net_yield_percent`,
+`f18_roce_percent`, `f19_annual_cash_flow`, `f20_monthly_cash_flow`,
+`f21_cash_on_cash_return_percent`, `f22_stressed_annual_interest`,
+`f22_icr_percent`. F-22 split into two functions per ENGINE_ARCHITECTURE.md
+Step 11. `f22_icr_percent` returns `None` for cash purchase per
+ENGINE_CONTRACTS.md Part 3.1.
+
+**Known ENGINE_CONTRACTS.md discrepancies (documented in tests):**
+- E-03 `gross_yield_percent`: contract=4.80, correct=5.49 (arithmetic error)
+- E-03 `icr_percent`: contract=127.88, correct=127.87 (rounding discrepancy)
+
+**Verification:** pytest 101 passed (pre-commit) → 143 passed (post-commit).
+ruff: All checks passed. mypy: Success, no issues found.
+
+---
+
+---
+
+## Pre-Commit 2.5 — Specification Clarifications
+
+**Commit message:** `docs: clarify tax pathway A formula and section_24_applies flag`
+**Status:** ✅ Complete (documentation only — no code)
+
+During Commit 2.5 implementation planning, three ambiguities were identified
+in the CALCULATION_SPEC.md tax pathway definitions. All three were resolved
+before implementation.
+
+### Ambiguity 1 — TA-06 test values
+
+**Resolution: No specification error.** The planning brief incorrectly used
+`effective_annual_rent = 9,807.60` for E-06. The correct contracted value in
+ENGINE_CONTRACTS.md E-06 is `9,807.30` (computed as `10,200 × 0.9615`).
+TEST_STRATEGY.md TA-06 values (4,633.30 / 1,853.32 / 570.82) are fully
+consistent with ENGINE_CONTRACTS.md. No document correction needed.
+
+### Ambiguity 2 — Step A-2 floor on negative taxable income
+
+**Resolution: CALCULATION_SPEC.md Step A-2 updated.**
+
+Original formula omitted an explicit floor:
+```
+income_tax_on_rental = taxable_rental_income × income_tax_rate_decimal
+```
+
+Corrected formula:
+```
+income_tax_on_rental = MAX(0, taxable_rental_income) × income_tax_rate_decimal
+```
+
+HMRC does not levy income tax on rental losses. TEST_STRATEGY.md TA-05 already
+specified `income_tax_gross: 0.00` for negative taxable income, confirming the
+correct behaviour. The correction makes the implicit floor explicit in the spec.
+
+### Ambiguity 3 — section_24_applies definition
+
+**Resolution: CALCULATION_SPEC.md Tax Pathway A updated.**
+
+New section inserted after Step A-4 defining `section_24_applies`:
+```
+section_24_applies = (annual_mortgage_interest > 0)
+```
+True when the deal has a mortgage (interest to restrict).
+False for cash-purchase individual landlords (no interest to restrict).
+Always False for Pathway B (LIMITED_COMPANY).
+
+**Files modified:** `docs/CALCULATION_SPEC.md` only.
+**ENGINE_CONTRACTS.md and TEST_STRATEGY.md: unchanged.**
+All contracted reference scenario values remain valid as written.
 
 ---
 

@@ -738,13 +738,19 @@ This is the defining feature of Section 24 and must not be altered.
 ### Step A-2 — Income Tax on Rental Income
 
 ```
-income_tax_on_rental = taxable_rental_income × income_tax_rate_decimal
+income_tax_on_rental = MAX(0, taxable_rental_income) × income_tax_rate_decimal
 ```
 
 Where income_tax_rate_decimal is:
 * 0.20 for BASIC_RATE
 * 0.40 for HIGHER_RATE
 * 0.45 for ADDITIONAL_RATE
+
+The floor at zero reflects HMRC rules: income tax applies only to profits,
+not losses. When taxable_rental_income is negative (costs exceed effective
+rent), income_tax_on_rental is zero. The tax credit in Step A-3 is still
+calculated on the full annual_mortgage_interest, but since income_tax_gross
+is zero, it cannot create a refund. See Step A-4.
 
 ### Step A-3 — Mortgage Interest Tax Credit
 
@@ -766,6 +772,21 @@ The floor of zero prevents a negative tax liability. In practice, on low-yield
 properties with high mortgage costs, taxable_rental_income may already be small
 or negative before the credit is applied, though the credit cannot create a
 refund.
+
+### section_24_applies — Derived Flag
+
+```
+section_24_applies = (annual_mortgage_interest > 0)
+```
+
+This flag is True when there is mortgage interest to restrict — i.e. when
+the deal has a mortgage. It is False for a cash-purchase individual landlord
+because Section 24 has no applicable interest to restrict; the calculation
+proceeds without the credit step being material.
+
+For Pathway B (LIMITED_COMPANY), section_24_applies is always False.
+Section 24 does not apply to limited companies. Mortgage interest remains
+fully deductible as a business expense under Pathway B.
 
 ### Simplification disclosures — Individual pathway
 
