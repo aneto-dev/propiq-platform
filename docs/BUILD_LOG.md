@@ -243,7 +243,32 @@ All contracted reference scenario values remain valid as written.
 ---
 
 ### Commit 2.5 — Tax pathways
-**Status:** ⏳ Not started
+
+**Message:** `feat(engine): tax pathway A (Section 24) and pathway B (Corporation Tax)`
+**Status:** ✅ Complete
+**Tests added:** 25 | **Running total:** 214
+
+**Files created:**
+- `backend/app/engine/tax/__init__.py`
+- `backend/app/engine/tax/individual.py` — Pathway A, `IndividualTaxResult` NamedTuple
+- `backend/app/engine/tax/limited_company.py` — Pathway B, `LimitedCompanyTaxResult` NamedTuple
+- `backend/tests/unit/tax/__init__.py`
+- `backend/tests/unit/tax/test_pathway_a_individual.py` (12 tests)
+- `backend/tests/unit/tax/test_pathway_b_limited_company.py` (13 tests)
+
+**No existing files modified.**
+
+**Key implementation decisions:**
+- `income_tax_gross = MAX(0, taxable_rental_income) × rate` per updated CALCULATION_SPEC.md
+- `section_24_applies = (annual_mortgage_interest > 0)` per CALCULATION_SPEC.md Derived Flag
+- `section_24_applies` always `False` for Pathway B
+- CT config passed as explicit arguments — never hardcoded in limited_company.py
+- Both pathways return NamedTuples; no imports from app.engine.contracts or app.domain entities
+- `LimitedCompanyTaxResult.section_24_applies` always `False` (for orchestrator convenience)
+
+**Tests cover:** TA-01 through TA-06, cash purchase s24=False, field types,
+result type, TB-01 through TB-07, s24 always False for Ltd Co, config fraction
+independence, field types, result type.
 
 ### Commit 2.6 — Validation pipeline
 **Status:** ⏳ Not started
