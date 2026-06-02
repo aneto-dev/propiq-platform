@@ -97,6 +97,27 @@ Changes to behaviour require an ADR update in DECISIONS.md first.
 
 ---
 
+## Long-term Product Vision
+
+PropIQ is intended to become the operating system for UK property investors.
+
+The initial implementation focuses on standard UK property underwriting because
+this creates the core calculation, validation, risk, and snapshot infrastructure
+that every future capability depends on.
+
+Long term, PropIQ should support multiple property strategies and investor types,
+including standard buy-to-let, BRRR, flips, HMO, serviced accommodation,
+rent-to-rent, lease options, joint ventures, deal sourcing, social housing
+leases, commercial conversion, and planning-led opportunities.
+
+The platform should remain strategy-aware rather than hard-coded to one deal type.
+
+The current underwriting engine must stay clean, deterministic, and focused.
+Strategy expansion is introduced later through explicit roadmap phases, not
+mixed into the current formula implementation.
+
+---
+
 ## Strategic Priorities
 
 **Phase 1 (current):** Ship the most trusted underwriting capability

@@ -219,6 +219,73 @@ the positioning, not strengthen it.
 
 ---
 
+## Multi-Strategy Platform Expansion
+
+PropIQ's growth opportunity is not limited to one property strategy.
+
+The platform should eventually support the major UK property investment
+workflows used by different investor types.
+
+### Residential Investment
+
+- Standard Buy-to-Let
+- BRRR (Buy, Refurbish, Refinance, Rent)
+- Property Flips
+- HMO (Houses in Multiple Occupation)
+- Serviced Accommodation
+
+### Creative and Control-Based Strategies
+
+- Rent-to-Rent
+- Lease Options
+- Assisted Sale
+- Vendor Finance
+
+### Commercial and Development
+
+- Commercial Property
+- Commercial Conversion
+- Mixed-Use
+- Planning Gain
+- Land and Small Development
+
+### Structured Arrangements
+
+- Joint Ventures
+- Deal Sourcing
+- Social Housing Leases
+
+### Investor Structures
+
+The platform should serve investors at every stage and across every structure:
+
+- Beginner investor (first deal, simple BTL)
+- Portfolio landlord (multiple standard lets)
+- Limited company investor (SPV structure, CT pathway)
+- HMO operator (per-room income modelling)
+- Serviced accommodation operator (dynamic occupancy modelling)
+- Deal sourcer (high-volume analysis, deal packaging)
+- Property trader / flipper (acquisition cost, refurb, resale margin)
+- Developer (planning gain, GDV, profit on cost)
+- Joint venture investor (profit split modelling)
+- Commercial investor (commercial yields, tenant covenant)
+- Social housing operator (guaranteed income vs open market comparison)
+
+### Strategic Principle
+
+PropIQ should become a multi-strategy decision platform for UK property
+investors, not a simple calculator.
+
+Each strategy will have its own underwriting inputs, calculation model,
+risk flags, investor KPIs, and snapshot outputs — all built on the same
+trust-first, deterministic, immutable infrastructure established in the
+initial underwriting engine.
+
+This is strategic direction only. No strategy-specific implementation
+detail is included here.
+
+---
+
 ## Long-Term Platform Value
 
 The platform builds long-term value through:

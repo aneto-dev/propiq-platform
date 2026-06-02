@@ -317,7 +317,80 @@ Future capabilities not yet scheduled:
 - Lender integrations
 - Broker collaboration workflows
 - Auction deal workflows
-- Commercial property analysis
 - Regulatory change monitoring and alerts
 - Mobile companion app
 - Enterprise multi-portfolio management
+
+---
+
+## Future Phase — Strategy Expansion Engine
+
+### Goal
+
+Expand PropIQ from a standard BTL underwriting platform into a
+**multi-strategy UK property investment operating system**.
+
+The initial implementation establishes the core calculation, validation, risk,
+and snapshot infrastructure around the standard buy-to-let strategy. That
+infrastructure is intentionally designed to be strategy-aware rather than
+hard-coded to one deal type.
+
+This future phase extends the platform to support the full range of UK property
+investment strategies used by serious investors.
+
+### Strategies
+
+**Residential Investment**
+
+- Buy-to-Let (current)
+- BRRR (Buy, Refurbish, Refinance, Rent)
+- Property Flips
+- HMO (Houses in Multiple Occupation)
+- Serviced Accommodation
+
+**Creative and Control-Based Strategies**
+
+- Rent-to-Rent
+- Lease Options
+- Assisted Sale
+- Vendor Finance
+
+**Commercial and Development**
+
+- Commercial Property
+- Commercial Conversion
+- Mixed-Use
+- Planning Gain
+- Land and Small Development
+
+**Structured Arrangements**
+
+- Joint Ventures
+- Deal Sourcing
+- Social Housing Leases
+
+### What Each Strategy Requires
+
+Each strategy eventually needs:
+
+- Strategy-specific underwriting inputs
+- Strategy-specific calculation model
+- Strategy-specific risk flags
+- Strategy-specific investor KPIs
+- Scenario analysis
+- Deal comparison
+- Snapshot-based, versioned outputs
+
+### Implementation Principles
+
+This phase is future roadmap direction only. No strategy-specific code
+is introduced during the current underwriting engine implementation.
+
+The current engine must stay clean, deterministic, and focused on the
+standard BTL pathway. Strategy expansion is introduced through explicit
+roadmap phases, not mixed into the current formula implementation.
+
+When strategy support is added, each strategy is implemented as a distinct
+calculation module with its own contracts, formulas, and validation rules —
+following the same trust-first, pure-function architecture established in
+Phase 2.
