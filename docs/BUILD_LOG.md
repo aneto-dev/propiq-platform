@@ -270,8 +270,39 @@ All contracted reference scenario values remain valid as written.
 result type, TB-01 through TB-07, s24 always False for Ltd Co, config fraction
 independence, field types, result type.
 
+**Post-commit fix:** C408 ruff violation (unnecessary `dict()` call) fixed in
+both test files. `E01_INPUTS` and `CT_CONFIG` converted from `dict(key=value)`
+to `{"key": value}` literals. No calculation logic or expected values changed.
+
+**Final verification (local):** pytest 25 passed. ruff: All checks passed. mypy: Success, no issues found.
+
 ### Commit 2.6 — Validation pipeline
-**Status:** ⏳ Not started
+
+**Message:** `feat(engine): validation pipeline V-01 through V-25`
+**Status:** ✅ Complete
+**Tests added:** 99 | **Running total:** 313
+
+**Files created:**
+- `backend/app/engine/validation/__init__.py`
+- `backend/app/engine/validation/rules.py` (440 lines — 25 rules + pipeline runner)
+- `backend/tests/unit/validation/__init__.py`
+- `backend/tests/unit/validation/test_hard_rules.py` (50 tests)
+- `backend/tests/unit/validation/test_warn_rules.py` (38 tests)
+- `backend/tests/unit/validation/test_validation_pipeline.py` (11 tests)
+
+**No existing files modified.**
+
+**Key implementation decisions:**
+- 25 rules as `ValidationRule` frozen dataclasses with `Callable[[EngineInput], bool]`
+- Pipeline iterates every rule — never stops at first error (all failures collected)
+- V-14 (LLP): implemented as value-level guard checking `.value not in` supported set
+  (Option A — LLP unreachable from current enum; guard protects against future additions)
+- V-06 guard: `purchase_price > 0` check prevents false V-07 trigger on zero price
+- `run_validation()` is the single public entry point, re-exported from `__init__.py`
+- `ValidationResult` from `app.engine.contracts` used throughout (no duplication)
+
+**Verification (pre-commit):** 60 implementation checks passed. 99 test
+functions defined. ruff: clean. mypy: clean.
 
 ### Commit 2.7 — Risk flag definitions
 **Status:** ⏳ Not started
