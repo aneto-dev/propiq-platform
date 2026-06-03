@@ -9,3 +9,7 @@ Architecture:
     Nothing in this package imports from app.db, app.api, or any
     application infrastructure.
 """
+
+from .orchestrator import run
+
+__all__ = ["run"]

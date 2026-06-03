@@ -260,9 +260,8 @@ class EngineIntermediates:
         mortgage_interest_tax_credit_gbp: None for LIMITED_COMPANY
         corporation_tax_gross_gbp:      None for INDIVIDUAL
 
-    sdlt_band_breakdown is a list (not tuple) because the engine produces
-    it as a plain list. The persistence layer converts to the domain entity
-    representation (tuple in SnapshotIntermediates for frozen-compatibility).
+    sdlt_band_breakdown is stored as an immutable tuple to keep
+    EngineIntermediates fully immutable.
 
     Source: ENGINE_CONTRACTS.md Part 3.2.
     """

@@ -661,3 +661,201 @@ def f15_total_cash_deployed(
         Total cash deployed in GBP at full precision.
     """
     return deposit_amount + total_sdlt + purchase_legal_costs + refurbishment_cost
+
+
+
+# ---------------------------------------------------------------------------
+# F-16 — Gross Yield
+# ---------------------------------------------------------------------------
+
+
+def f16_gross_yield_percent(
+    gross_annual_rent: Decimal,
+    purchase_price: Decimal,
+) -> Decimal:
+    """
+    Gross yield as a percentage of purchase price.
+
+    gross_yield_percent = (gross_annual_rent / purchase_price) × 100
+
+    Disclosure: gross yield is a headline comparison metric only.
+    It does not reflect voids, costs, financing, or tax.
+
+    Source: CALCULATION_SPEC.md F-16; DOMAIN_GLOSSARY.md — Gross Yield.
+    """
+    if purchase_price == Decimal("0"):
+        return Decimal("0")
+    return gross_annual_rent / purchase_price * Decimal("100")
+
+
+# ---------------------------------------------------------------------------
+# F-17 — Net Yield
+# ---------------------------------------------------------------------------
+
+
+def f17_net_yield_percent(
+    net_operating_income: Decimal,
+    purchase_price: Decimal,
+) -> Decimal:
+    """
+    Net yield as a percentage of purchase price.
+
+    net_yield_percent = (net_operating_income / purchase_price) × 100
+
+    Financing-neutral and tax-neutral by design (ADR-004).
+    May be negative when operating costs exceed effective rent.
+
+    Source: CALCULATION_SPEC.md F-17; DOMAIN_GLOSSARY.md — Net Yield.
+    """
+    if purchase_price == Decimal("0"):
+        return Decimal("0")
+    return net_operating_income / purchase_price * Decimal("100")
+
+
+# ---------------------------------------------------------------------------
+# F-18 — ROCE
+# ---------------------------------------------------------------------------
+
+
+def f18_roce_percent(
+    net_operating_income: Decimal,
+    total_cash_deployed: Decimal,
+) -> Decimal:
+    """
+    Return on Capital Employed as a percentage of total cash deployed.
+
+    roce_percent = (net_operating_income / total_cash_deployed) × 100
+
+    Financing-neutral and tax-neutral. Uses total_cash_deployed (investor's
+    actual cash) as denominator rather than purchase_price, reflecting the
+    leveraged nature of the investment.
+
+    Zero guard: V-05 prevents deposit=0 so total_cash_deployed is always
+    > 0 after successful validation. The guard handles the theoretically
+    unreachable case without raising.
+
+    Source: CALCULATION_SPEC.md F-18; DOMAIN_GLOSSARY.md — ROCE.
+    """
+    if total_cash_deployed == Decimal("0"):
+        return Decimal("0")
+    return net_operating_income / total_cash_deployed * Decimal("100")
+
+
+# ---------------------------------------------------------------------------
+# F-19 — Annual Cash Flow
+# ---------------------------------------------------------------------------
+
+
+def f19_annual_cash_flow(
+    net_operating_income: Decimal,
+    annual_mortgage_cost: Decimal,
+    annual_tax_liability: Decimal,
+) -> Decimal:
+    """
+    Annual cash flow after operating costs, financing, and estimated tax.
+
+    annual_cash_flow = net_operating_income
+                     - annual_mortgage_cost
+                     - annual_tax_liability
+
+    May be negative. No floor is applied — a negative result is a valid
+    and meaningful output (the investor must fund a monthly shortfall).
+
+    Source: CALCULATION_SPEC.md F-19; DOMAIN_GLOSSARY.md — Annual Cash Flow.
+    """
+    return net_operating_income - annual_mortgage_cost - annual_tax_liability
+
+
+# ---------------------------------------------------------------------------
+# F-20 — Monthly Cash Flow
+# ---------------------------------------------------------------------------
+
+
+def f20_monthly_cash_flow(
+    annual_cash_flow: Decimal,
+) -> Decimal:
+    """
+    Monthly cash flow derived from annual cash flow.
+
+    monthly_cash_flow = annual_cash_flow / 12
+
+    May be negative. No floor applied.
+
+    Source: CALCULATION_SPEC.md F-20.
+    """
+    return annual_cash_flow / Decimal("12")
+
+
+# ---------------------------------------------------------------------------
+# F-21 — Cash-on-Cash Return
+# ---------------------------------------------------------------------------
+
+
+def f21_cash_on_cash_return_percent(
+    annual_cash_flow: Decimal,
+    total_cash_deployed: Decimal,
+) -> Decimal:
+    """
+    Cash-on-cash return as a percentage of total cash deployed.
+
+    cash_on_cash_return_percent = (annual_cash_flow / total_cash_deployed) × 100
+
+    Post-financing and post-tax. The most meaningful return metric for a
+    leveraged investor assessing actual cash generated relative to cash
+    committed. May be negative.
+
+    Zero guard matches F-18 rationale — unreachable after V-05 but defensive.
+
+    Source: CALCULATION_SPEC.md F-21; DOMAIN_GLOSSARY.md — Cash-on-Cash Return.
+    """
+    if total_cash_deployed == Decimal("0"):
+        return Decimal("0")
+    return annual_cash_flow / total_cash_deployed * Decimal("100")
+
+
+# ---------------------------------------------------------------------------
+# F-22 — ICR Stress Test
+# Split into two functions per ENGINE_ARCHITECTURE.md Step 11.
+# ---------------------------------------------------------------------------
+
+
+def f22_stressed_annual_interest(
+    loan_amount: Decimal,
+    stress_test_rate_percent: Decimal,
+) -> Decimal:
+    """
+    Stressed annual interest at the lender stress-test rate.
+
+    stressed_annual_interest = loan_amount × (stress_test_rate_percent / 100)
+
+    The rate is applied as interest-only regardless of actual mortgage type.
+    This reflects standard BTL lender affordability methodology.
+
+    For a cash purchase (loan_amount = 0), returns 0. The orchestrator
+    detects this and sets icr_percent = None.
+
+    Source: CALCULATION_SPEC.md F-22 (Stressed Annual Interest).
+    """
+    return loan_amount * (stress_test_rate_percent / Decimal("100"))
+
+
+def f22_icr_percent(
+    effective_annual_rent: Decimal,
+    stressed_annual_interest: Decimal,
+) -> Decimal | None:
+    """
+    Interest Coverage Ratio as a percentage of stressed annual interest.
+
+    icr_percent = (effective_annual_rent / stressed_annual_interest) × 100
+
+    Returns None when stressed_annual_interest is zero (cash purchase —
+    loan_amount = 0). The caller must handle None explicitly.
+
+    ENGINE_CONTRACTS.md Part 3.1: icr_percent: Decimal | None —
+    None when cash purchase (loan = 0).
+
+    Source: CALCULATION_SPEC.md F-22 (ICR); DOMAIN_GLOSSARY.md — ICR.
+    """
+    if stressed_annual_interest == Decimal("0"):
+        return None
+    return effective_annual_rent / stressed_annual_interest * Decimal("100")
