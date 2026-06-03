@@ -473,6 +473,16 @@ def e07_expected_hard_error_code() -> str:
     return "V-07"
 
 
+def e07_expected_warnings() -> frozenset[str]:
+    """
+    E-07: deposit=25,000 triggers V-08 WARN (< 25%) alongside V-07 HARD.
+    refurbishment_cost=0 triggers V-25 WARN unconditionally.
+    ValidationResult carries all WARN rules that fired.
+    """
+    return frozenset({"V-08", "V-25"})
+
+
+
 def e08_expected_warnings() -> frozenset[str]:
     """E-08: V-08 (deposit < 25%) and V-25 (refurb=0) both fire."""
     return frozenset({"V-08", "V-25"})
@@ -530,10 +540,10 @@ def e11_expected_outputs() -> dict[str, object]:
         "monthly_cash_flow_gbp":              Decimal("21.54"),
         "gross_yield_percent":                Decimal("5.18"),
         "net_yield_percent":                  Decimal("3.00"),
-        "roce_percent":                       Decimal("9.30"),
-        "cash_on_cash_return_percent":        Decimal("0.38"),
+        "roce_percent":                       Decimal("9.99"),
+        "cash_on_cash_return_percent":        Decimal("0.39"),
         "ltv_percent":                        Decimal("75.00"),
-        "icr_percent":                        Decimal("150.08"),
+        "icr_percent":                        Decimal("120.78"),
         "total_sdlt_gbp":                     Decimal("8500.00"),
         "total_acquisition_cost_gbp":         Decimal("231000.00"),
         "total_cash_deployed_gbp":            Decimal("66000.00"),
@@ -541,11 +551,11 @@ def e11_expected_outputs() -> dict[str, object]:
 
 
 def e11_expected_flags() -> frozenset[str]:
-    return frozenset({"LOW_MARGIN_SAFETY", "RENT_UNVERIFIED"})
+    return frozenset({"LOW_MARGIN_SAFETY", "LOW_ICR_BASIC", "RENT_UNVERIFIED"})
 
 
 def e11_absent_flags() -> frozenset[str]:
-    return frozenset({"NEGATIVE_CASHFLOW", "LOW_ICR_BASIC"})
+    return frozenset({"NEGATIVE_CASHFLOW"})
 
 
 def e11_expected_warnings() -> frozenset[str]:

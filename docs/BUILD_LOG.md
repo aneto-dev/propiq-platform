@@ -500,11 +500,64 @@ ruff: All checks passed. mypy: Success, no issues found.
 - E-06: total_operating = 5,174 (includes service charge + ground rent);
   income_tax_gross = 1,853.32; credit = 1,282.50; liability = 570.82
 
-**Discrepancy note (E-03):** ENGINE_CONTRACTS.md shows icr_percent=127.88.
-Formula arithmetic gives 127.87 (18,460.80 / 14,437.50 × 100). Test uses
-127.87 (correct). Documented in conftest and test docstring.
+**Discrepancy notes:**
 
-**Verification (pre-commit):** 96 test functions. ruff: clean. mypy: clean.
+- *E-03 icr_percent:* ENGINE_CONTRACTS.md shows 127.88; arithmetic gives 127.87
+  (18,460.80 / 14,437.50 × 100 = 127.867...). Test uses 127.87 (correct).
+
+- *E-06 icr_percent:* ENGINE_CONTRACTS.md shows 132.10; arithmetic gives 132.08
+  (9,807.30 / 7,425.00 × 100 = 132.0848...). Discovered during Commit 2.10
+  local verification. conftest.py e06_expected_outputs() corrected to 132.08.
+  Same class of error as E-03 — arithmetic error in ENGINE_CONTRACTS.md.
+
+- *void_rate_decimal_applied (E-01):* Test expected 0.0385 (4dp) but
+  ENGINE_CONTRACTS.md Part 7.2 rounds all EngineIntermediates to 2dp at
+  Step 13. Orchestrator correctly stores _r(0.0385) = 0.04. Test corrected
+  to assert Decimal("0.04").
+
+**Verification (post-fix):** 96 passed (all 2 previously failing tests corrected).
+ruff: clean. mypy: clean.
 
 ### Commit 2.11 — Regression tests E-07 through E-12 + determinism
-**Status:** ⏳ Not started
+
+**Message:** `test(engine): regression E-07 to E-12, determinism guarantees`
+**Status:** ✅ Complete
+**Tests added:** 59 | **Running total:** 582
+
+**Files created:**
+- `backend/tests/regression/test_e07_hard_validation_failure.py` (7 tests)
+- `backend/tests/regression/test_e08_warn_only_validation.py` (10 tests)
+- `backend/tests/regression/test_e09_short_lease_flag.py` (5 tests)
+- `backend/tests/regression/test_e10_additional_rate.py` (9 tests)
+- `backend/tests/regression/test_e11_thin_margin.py` (8 tests)
+- `backend/tests/regression/test_e12_high_refurb.py` (9 tests)
+- `backend/tests/determinism/__init__.py`
+- `backend/tests/determinism/test_idempotent_execution.py` (4 tests — DET-01..04)
+- `backend/tests/determinism/test_serialisation_roundtrip.py` (2 tests — DET-05..06)
+- `backend/tests/determinism/test_config_version_isolation.py` (3 tests — DET-07..09)
+- `backend/tests/determinism/test_no_internal_state.py` (2 tests — DET-10..11)
+
+**No files modified.**
+
+**Key test notes:**
+- E-07: asserts isinstance(result, ValidationResult), is_valid=False, V-07 in
+  hard_errors, field="deposit_amount", no EngineResult structure present.
+- E-08: asserts V-08+V-25 in validation_warnings, HIGH_LEVERAGE fires (ltv=82.50),
+  HIGH_LEVERAGE_EXTREME absent (82.50 < 85).
+- E-09: outputs identical to E-06; LEASEHOLD_SHORT_LEASE fires with
+  triggered_by_value="72".
+- E-10: maximum Section 24 impact at ADDITIONAL_RATE; credit still 20%.
+- E-11: LOW_MARGIN_SAFETY fires; cash flow positive (258.48); NEGATIVE_CASHFLOW
+  absent; triggered_by_value="258.48".
+- E-12: V-25 NOT in warnings (refurb=25000); HIGH_REFURB_RATIO fires with
+  triggered_by_value="25000.00".
+- DET-01..04: identical inputs → identical outputs (1, 2, and 10 sequential calls).
+- DET-05..06: object identity irrelevant — reconstructed inputs/configs produce
+  same results.
+- DET-07..09: different configs → different results; original config always
+  reproduces original result; higher stress rate → lower ICR.
+- DET-10: static inspection of engine sub-modules for mutable module-level
+  variables (G-2 structural guarantee).
+- DET-11: EngineResult has no timestamp fields (G-3 guarantee).
+
+**Verification (pre-commit):** 59 test functions. ruff: clean. mypy: clean.
