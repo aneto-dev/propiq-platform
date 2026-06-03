@@ -822,3 +822,67 @@ SELECT, INSERT on all 16 tables. No UPDATE or DELETE anywhere — per schema: "E
 **Ruff fix:** 3 × `I001` import-sort errors auto-fixed in `i_deal.py`, `i_snapshot.py`, `i_audit.py`.
 
 **Verification:** pytest: 582 passed. ruff: All checks passed. mypy: Success, no issues found in 59 source files.
+
+---
+
+### Commit 4.3 — Configuration repository
+
+**Message:** `feat(repositories): configuration repository implementation`
+**Status:** ✅ Complete
+**Tests added:** 17 (integration — require test DB, run via `make test-int`)
+**Running total (unit):** 582 | **Integration:** 137
+
+**Files created:**
+- `backend/app/repositories/configuration_repository.py`
+- `backend/tests/integration/repositories/__init__.py`
+- `backend/tests/integration/repositories/conftest.py`
+- `backend/tests/integration/repositories/test_configuration_repository.py`
+
+**Implementation (`ConfigurationRepository`):**
+- Constructor takes `AsyncSession` (injected; does not open/close sessions — RI-07, RI-08)
+- `find_active_sdlt_config(as_of_date)` — SELECT + LIMIT 1 by `effective_from DESC`, then second query for bands; raises `ConfigurationNotFoundError` if none found
+- `find_sdlt_config_by_id(version_id)` — SELECT by PK, then bands; raises if not found
+- `find_active_corporation_tax_config(as_of_date)` — same active-version pattern
+- `find_corporation_tax_config_by_id(version_id)` — SELECT by PK
+- `find_active_assumption_config(as_of_date)` — same active-version pattern
+- `find_assumption_config_by_id(version_id)` — SELECT by PK
+- `_to_sdlt_domain(version, bands)` — ORM rows → `SDLTConfig` (per roadmap spec)
+- `_to_ct_domain(row)` — ORM row → `CorporationTaxConfig`
+- `_to_assumption_domain(row)` — ORM row → `AssumptionConfig`
+- All numeric values wrapped in `Decimal(str(...))` to enforce RI-13 (no float)
+- Listing and admin write methods: listing implemented; writes raise `NotImplementedError` (no metadata in engine contract types)
+
+**Tests (all 5 roadmap-specified + 12 additional correctness tests):**
+- `find_active_sdlt_config(date(2025,6,1))` → 5 bands, surcharge=0.030000 ✅
+- `find_active_sdlt_config(date(2024,12,31))` → raises `ConfigurationNotFoundError` ✅
+- `find_sdlt_config_by_id(known_uuid)` → correct record ✅
+- `find_sdlt_config_by_id(unknown_uuid)` → raises `ConfigurationNotFoundError` ✅
+- `find_active_assumption_config` → all 11 seed values match exactly ✅
+
+**Ruff fixes:** 3 errors auto-fixed (`I001` ×2, `F401` ×1); 1 further fix (`F821` — missing `SDLTConfiguration` import, `F821` — wrong parameter type in `save_sdlt_config`).
+
+**Verification:** pytest (unit): 582 passed. ruff: All checks passed. mypy: Success, no issues found in 60 source files. Integration: 17 tests collected.
+
+---
+
+### Commit 4.2 — Pagination types
+
+**Message:** `feat(repositories): PageRequest and Page types`
+**Status:** ✅ Complete (no new files — all work completed in Commit 4.1)
+**Tests added:** 0
+**Running total:** 582
+
+**Verification against roadmap spec:**
+
+`backend/app/repositories/pagination.py` already exists and fully satisfies all Commit 4.2 requirements:
+
+| Requirement | Status |
+|---|---|
+| `PageRequest` frozen dataclass with `limit: int = 20`, `cursor: str | None = None` | ✅ |
+| `__post_init__` validates `1 <= limit <= 100` | ✅ |
+| `Page(Generic[T])` with `items`, `next_cursor`, `total_count` | ✅ |
+| Cursor encoding: base64 of JSON `{"created_at": "<iso>", "id": "<uuid>"}` | ✅ (`encode_cursor` / `decode_cursor`) |
+
+No files were created or modified. Commit 4.2 content was delivered in Commit 4.1 because the interfaces required `PageRequest` and `Page[T]` to typecheck.
+
+**Verification:** pytest: 582 passed. ruff: All checks passed. mypy: Success, no issues found in 59 source files.
