@@ -358,8 +358,8 @@ ruff: clean. mypy: clean.
 ### Commit 2.8 — Engine orchestrator
 
 **Message:** `feat(engine): orchestrator — engine.run() entry point`
-**Status:** ✅ Complete
-**Tests added:** 34 | **Running total:** 389
+**Status:** ✅ Complete and pushed
+**Tests added:** 34 | **Running total:** 427 (repository ground truth)
 
 **Files created:**
 - `backend/app/engine/orchestrator.py` (440 lines — 13-step pipeline)
@@ -396,10 +396,17 @@ ruff: clean. mypy: clean.
 - `pre_tax_annual_cash_flow` computed inline: `noi - annual_mortgage_cost`
   (no formula number — orchestrator-only intermediate per ENGINE_ARCHITECTURE.md).
 
-**Note on running total:** BUILD_LOG tracked 393 after Commit 2.7 but the
-repository reported 355 passing. The gap (38) traces to V-21/V-22 test
-rewrites in Commit 2.6 replacing trigger tests with structural documentation
-tests. Repository count (355) is ground truth. Commit 2.8 adds 34 → **389**.
+**Note on running total:** BUILD_LOG projections and repository counts diverged
+across several commits (V-21/V-22 rewrites in 2.6, Commit 2.4 recovery).
+Repository ground truth after Commit 2.8 local verification: **427 passed**.
+All subsequent commits use 427 as the baseline.
+
+**Local verification results:**
+- pytest: 427 passed
+- ruff: All checks passed
+- mypy: Success, no issues found
+- SDLT band breakdown standardised to immutable tuple representation
+- Engine outputs flow through full end-to-end calculation pipeline
 
 **Verification (pre-commit):** All 12 files syntax-clean. 34 test functions
 defined. ruff: clean (verified in sandbox). mypy: clean (verified in sandbox).
