@@ -713,3 +713,36 @@ SELECT, INSERT on all 16 tables. No UPDATE or DELETE anywhere — per schema: "E
 **Downgrade:** Revokes all grants and drops both roles. Real downgrade (not no-op) since no immutable data is created by this migration. Production downgrade requires a maintenance window.
 
 **Verification:** pytest: 582 passed. ruff: All checks passed. mypy: Success, no issues found in 49 source files.
+
+---
+
+### Commit 3.4 — Configuration seed script
+
+**Message:** `feat(scripts): seed v1.0 configuration data`
+**Status:** ✅ Complete
+**Tests added:** 0 (seed correctness verified in Commit 3.5 schema integrity tests)
+**Running total:** 582
+
+**Files created:**
+- `backend/scripts/seed_configuration.py`
+
+**Records seeded (all idempotent — safe to re-run):**
+
+| Table | Key | Values |
+|---|---|---|
+| `config_engine_versions` | `"1.0.0"` | `is_breaking_change=False`, `specification_ref="CALCULATION_SPEC.md v1.0"` |
+| `config_sdlt_versions` | ENGLAND, 2025-04-01 | `additional_dwelling_surcharge_rate=0.030000` |
+| `config_sdlt_bands` | 5 bands | 0%, 2%, 5%, 10%, 12% at standard thresholds |
+| `config_corporation_tax_versions` | 2023-04-01 | small_profits=19%, main=25%, marginal relief 3/200 |
+| `config_assumption_versions` | 2025-01-01 | void=3.85%, letting=10%, VAT=20%, stress=5.5%, ICR basic=125%, higher=145% |
+
+**Idempotency mechanism:**
+- `config_engine_versions`: `ON CONFLICT (version_string) DO NOTHING`
+- `config_sdlt_versions`: pre-existence check by `(effective_from, property_country)` — existing ID retrieved and used for band seeding
+- `config_sdlt_bands`: `ON CONFLICT (sdlt_version_id, band_order) DO NOTHING`
+- `config_corporation_tax_versions`: `ON CONFLICT (effective_from) DO NOTHING`
+- `config_assumption_versions`: `ON CONFLICT (effective_from) DO NOTHING`
+
+**All values sourced from DATABASE_SCHEMA_DESIGN.md Section 9 exactly as specified. SDLT band boundary verified against ENGINE_CONTRACTS.md E-01: £200k purchase → total_sdlt = £7,500.00 ✓**
+
+**Verification:** pytest: 582 passed. ruff: All checks passed. mypy: Success, no issues found in 49 source files. (Script is in `scripts/` — outside mypy `app/` scope by project convention.)
