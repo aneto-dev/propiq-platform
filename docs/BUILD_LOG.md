@@ -746,3 +746,35 @@ SELECT, INSERT on all 16 tables. No UPDATE or DELETE anywhere — per schema: "E
 **All values sourced from DATABASE_SCHEMA_DESIGN.md Section 9 exactly as specified. SDLT band boundary verified against ENGINE_CONTRACTS.md E-01: £200k purchase → total_sdlt = £7,500.00 ✓**
 
 **Verification:** pytest: 582 passed. ruff: All checks passed. mypy: Success, no issues found in 49 source files. (Script is in `scripts/` — outside mypy `app/` scope by project convention.)
+
+---
+
+### Commit 3.5 — Migration integration tests
+
+**Message:** `test(db): schema integrity tests against test database`
+**Status:** ✅ Complete
+**Tests added:** 120 (integration — require test DB, run via `make test-int`)
+**Running total (unit):** 582 | **Integration:** 120
+
+**Files created:**
+- `backend/tests/integration/__init__.py`
+- `backend/tests/integration/test_schema_integrity.py`
+
+**Test classes and coverage:**
+
+| Class | Tests | What is verified |
+|---|---|---|
+| `TestAllTablesExist` | 17 | All 16 tables present; exactly that set and no others |
+| `TestColumnNullability` | 79 | 25 nullable columns, 54 NOT NULL columns (spot-check from Sections 2–5) |
+| `TestUniqueConstraints` | 3 | UNIQUE INDEX on `snapshot_id` for all three 1:1 snapshot sub-tables |
+| `TestForeignKeys` | 11 | All key FK relationships from Section 6; including deferred deals↔snapshot_calculations circular FK |
+| `TestConfigData` | 10 | All 5 seed records present; correct rates/values; age_days query; PostGIS enabled |
+
+**Session fixture (`db_schema`, autouse=True):**
+1. Drops and recreates `public` schema (clean slate via `AUTOCOMMIT`)
+2. Runs `alembic upgrade head` via subprocess with `DATABASE_URL` set to test URL (avoids `lru_cache` conflict with `env.py`)
+3. Runs `scripts/seed_configuration.py` via subprocess against test DB
+
+**Not collected by `make test-unit`** — integration tests only run via `make test-int` which starts the test DB first.
+
+**Verification:** `make test-unit`: 582 passed. ruff: All checks passed. mypy: No issues in 49 source files. Integration tests: 120 collected cleanly (not executed — no test DB in CI without `make dev-db-test`).
