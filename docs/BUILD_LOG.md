@@ -301,11 +301,51 @@ to `{"key": value}` literals. No calculation logic or expected values changed.
 - `run_validation()` is the single public entry point, re-exported from `__init__.py`
 - `ValidationResult` from `app.engine.contracts` used throughout (no duplication)
 
-**Verification (pre-commit):** 60 implementation checks passed. 99 test
+**Verification (pre-commit):** 28 implementation checks passed. 99 test
 functions defined. ruff: clean. mypy: clean.
 
+**Post-generation corrections (before local verification):**
+- V-21 and V-22 conditions changed to `lambda i: False` — `EngineInput` defines
+  `annual_service_charge` and `annual_ground_rent` as `Decimal` (not `Decimal|None`).
+  Null-check conditions are unreachable at the engine boundary; service layer
+  enforces leasehold presence before `EngineInput` is assembled. Pattern matches
+  V-14 Option A. Rules remain in `VALIDATION_RULES` with correct metadata.
+- V-02 and V-03 tests fixed: changing `purchase_price` alone cascaded into
+  V-06/V-07/V-08 hard failures. Deposit amount now scaled proportionally
+  (25%+ of test price) to isolate the target WARN rule.
+
 ### Commit 2.7 — Risk flag definitions
-**Status:** ⏳ Not started
+
+**Message:** `feat(engine): risk flag definitions and evaluator`
+**Status:** ✅ Complete
+**Tests added:** 80 | **Running total:** 393
+
+**Files created:**
+- `backend/app/engine/risk_flags/__init__.py`
+- `backend/app/engine/risk_flags/definitions.py` (424 lines)
+- `backend/tests/unit/risk_flags/__init__.py`
+- `backend/tests/unit/risk_flags/test_flag_*.py` × 17 flag test files
+- `backend/tests/unit/risk_flags/test_flag_evaluation_pipeline.py`
+
+**No existing files modified.**
+
+**Key implementation decisions:**
+- `EvaluationContext`: frozen dataclass with 15 named fields from outputs,
+  intermediates, and inputs. No condition accesses EngineInput/EngineConfig.
+- `RiskFlagDefinition`: frozen dataclass with `condition` and `value_extractor`
+  callables. Evaluator iterates in declaration order (HIGH→MEDIUM→INFO).
+- `LOW_ICR_BASIC`: ownership check omitted (all valid structures are already
+  in the supported set). `None` guard mandatory for cash purchase.
+- `LOW_MARGIN_SAFETY`: strictly `< 0.05`. TEST_STRATEGY.md "Fires:" label on
+  boundary-exact case is a typo; CALCULATION_SPEC.md strict inequality governs.
+- `LEASEHOLD_SHORT_LEASE`: `None` guard on `lease_years_remaining` is required.
+  Value is legitimately nullable at the engine boundary.
+- `RENT_UNVERIFIED`: `condition=lambda c: True` — unconditional INFO disclosure.
+- `LTD_EXTRACTION_UNDISCLOSED`: fires whenever `ownership_structure == LIMITED_COMPANY`.
+- `FLAG_DEFINITIONS` ordered HIGH→MEDIUM→INFO; result list inherits that order.
+
+**Verification (pre-commit):** 15 implementation checks passed. 80 tests defined.
+ruff: clean. mypy: clean.
 
 ### Commit 2.8 — Engine orchestrator
 **Status:** ⏳ Not started
