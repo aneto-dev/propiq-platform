@@ -428,7 +428,41 @@ defined. ruff: clean (verified in sandbox). mypy: clean (verified in sandbox).
    states (arithmetic error in that document). Test now expects `10,768.76`.
 
 ### Commit 2.9 — Reference scenario fixtures
-**Status:** ⏳ Not started
+
+**Message:** `test(engine): reference scenario fixtures E-01 through E-12`
+**Status:** ✅ Complete and pushed
+**Tests added:** 0 (fixtures only — tests in Commits 2.10 and 2.11)
+**Running total:** 427
+
+**Files created:**
+- `backend/tests/conftest.py` (601 lines)
+  — REFERENCE_CONFIG, ALTERNATIVE_CONFIG_VOID, ALTERNATIVE_CONFIG_STRESS
+  — e01_input() through e12_input() — scenario input builders
+  — e01_expected_outputs() through e12_expected_outputs() — expected values
+  — e01_expected_flags() / e01_absent_flags() / e01_expected_warnings() (× 12)
+  — pytest fixtures: reference_config, alt_config_void, alt_config_stress
+- `backend/tests/regression/conftest.py` (127 lines)
+  — Re-exports all builders from top-level conftest
+  — assert_outputs() helper (exact Decimal comparison with field name in error)
+  — assert_flags_present() / assert_flags_absent() / assert_warnings() helpers
+
+**No files modified.**
+
+**Key decisions:**
+- All expected values hardcoded from ENGINE_CONTRACTS.md Part 11 — nothing
+  computed at import time from formulas.
+- E-03 icr_percent: 127.87 (arithmetically correct per F-22 formula; ENGINE_CONTRACTS.md
+  shows 127.88 — known arithmetic discrepancy documented in Commit 2.4).
+- E-10 expected outputs expressed as delta from E-01 base dict to avoid
+  duplicating all 17 fields.
+- E-12 validation warnings: empty frozenset (refurb=25000 so V-25 does not fire).
+- assert_outputs() rounds actual values to 2dp before comparing — matches
+  ENGINE_CONTRACTS.md Part 7.2 rounding semantics.
+- REFERENCE_CONFIG and ALTERNATIVE_CONFIG_* are module-level constants, not
+  just pytest fixtures, so they can be imported by non-pytest code (Commit 2.10+).
+
+**Verification:** pytest 427 passed (no new tests — fixtures are data only).
+ruff: All checks passed. mypy: Success, no issues found.
 
 ### Commit 2.10 — Regression tests E-01 through E-06
 **Status:** ⏳ Not started
