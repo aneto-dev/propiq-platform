@@ -886,3 +886,48 @@ SELECT, INSERT on all 16 tables. No UPDATE or DELETE anywhere — per schema: "E
 No files were created or modified. Commit 4.2 content was delivered in Commit 4.1 because the interfaces required `PageRequest` and `Page[T]` to typecheck.
 
 **Verification:** pytest: 582 passed. ruff: All checks passed. mypy: Success, no issues found in 59 source files.
+
+---
+
+### Commit 4.4 — User and InvestorProfile repositories
+
+**Message:** `feat(repositories): user and investor profile repositories`
+**Status:** ✅ Complete
+**Tests added:** 21 (integration — require test DB, run via `make test-int`)
+**Running total (unit):** 582 | **Integration:** 158
+
+**Files created:**
+- `backend/app/repositories/investor_profile_repository.py`
+- `backend/tests/integration/repositories/test_user_repository.py` (9 tests)
+- `backend/tests/integration/repositories/test_investor_profile_repository.py` (12 tests)
+
+**Files already present (untracked from prior session):**
+- `backend/app/repositories/user_repository.py` — complete implementation; no changes needed
+
+**InvestorProfileRepository implementation:**
+- Constructor takes `AsyncSession` (injected; does not open/close sessions — RI-07, RI-08)
+- `save(profile)` — `session.add()` with ORM model; idempotency enforced at service layer
+- `update(profile)` — `update()` statement on mutable fields only; `id`, `user_id`, `created_at` never modified
+- `find_by_id(profile_id)` — SELECT by PK
+- `find_by_id_for_user(profile_id, user_id)` — SELECT by PK AND user_id; returns None for both "not found" and "wrong user" (RI-06)
+- `find_all_for_user(user_id, include_archived)` — ORDER BY created_at DESC; filters archived when include_archived=False
+- `find_default_for_user(user_id)` — SELECT WHERE is_default=True AND user_id
+- `_to_domain(row)` — ORM → InvestorProfile with defensive enum coercion for asyncpg compatibility
+
+**UserRepository tests (9 tests):**
+- `save()` then `find_by_supabase_auth_id()` returns the saved user
+- `save()` twice with same supabase_auth_id: idempotent (second save is no-op — ON CONFLICT DO NOTHING)
+- `find_by_id()` and `find_by_email()` return correct records after save
+- `find_by_id/supabase_auth_id/email` return None when not found
+- `update()` persists display_name and status changes
+
+**InvestorProfileRepository tests (12 tests):**
+- `save()` then `find_by_id()` returns correct profile with all fields
+- Ltd Co profile (income_tax_band=None) saves and loads correctly
+- `find_by_id()` returns None when not found
+- `find_by_id_for_user()` returns profile for correct user; None for wrong user; None when not found
+- `find_default_for_user()` returns profile with is_default=True; None when no default set
+- `find_all_for_user()` excludes archived by default; includes archived when include_archived=True
+- `update()` persists label change; does not modify user_id
+
+**Verification:** pytest (unit): 582 passed. ruff: All checks passed. mypy: Success, no issues found in 62 source files. Integration tests: 21 collected (9 user + 12 investor_profile).
