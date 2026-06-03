@@ -675,3 +675,41 @@ pytest: 582 passed (no new tests).
 **Downgrade:** intentional no-op per `PERSISTENCE_ARCHITECTURE.md` Part 14.2. All tables created are immutable (snapshot_*, config_*, audit_calculations). Dropping them would destroy historical data. Development reset requires dropping and recreating the database.
 
 **Verification:** ruff: All checks passed. mypy: Success, no issues found. pytest: 582 passed (no new tests — migration integrity tested in Commit 3.5).
+
+---
+
+### Commit 3.3 — Database role privileges migration
+
+**Message:** `migration: application database role privileges`
+**Status:** ✅ Complete
+**Tests added:** 0
+**Running total:** 582
+
+**Files created:**
+- `backend/alembic/versions/0002_database_roles.py`
+
+**Roles created:**
+- `propiq_app` — runtime FastAPI application role
+- `propiq_admin` — admin configuration management role
+
+(`propiq_migrations` is not created here — it is the superuser-equivalent migration execution role that pre-exists in each environment.)
+
+**Privilege grants — propiq_app (per DATABASE_SCHEMA_DESIGN.md Section 7):**
+
+| Tables | SELECT | INSERT | UPDATE | DELETE |
+|---|---|---|---|---|
+| users, investor_profiles, properties, deals | ✅ | ✅ | ✅ | ✗ |
+| snapshot_calculations | ✅ | ✅ | column-level only | ✗ |
+| snapshot_inputs/outputs/intermediates/risk_flags/validation_warnings | ✅ | ✅ | ✗ | ✗ |
+| config_* (5 tables) | ✅ | ✗ | ✗ | ✗ |
+| audit_calculations | ✅ | ✅ | ✗ | ✗ |
+
+Column-level UPDATE grant: `GRANT UPDATE (is_superseded, superseded_at) ON snapshot_calculations TO propiq_app` — the single permitted snapshot mutation.
+
+**Privilege grants — propiq_admin:**
+
+SELECT, INSERT on all 16 tables. No UPDATE or DELETE anywhere — per schema: "Even the admin role has no UPDATE or DELETE on any table."
+
+**Downgrade:** Revokes all grants and drops both roles. Real downgrade (not no-op) since no immutable data is created by this migration. Production downgrade requires a maintenance window.
+
+**Verification:** pytest: 582 passed. ruff: All checks passed. mypy: Success, no issues found in 49 source files.
