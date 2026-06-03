@@ -465,7 +465,46 @@ defined. ruff: clean (verified in sandbox). mypy: clean (verified in sandbox).
 ruff: All checks passed. mypy: Success, no issues found.
 
 ### Commit 2.10 — Regression tests E-01 through E-06
-**Status:** ⏳ Not started
+
+**Message:** `test(engine): regression tests E-01 through E-06`
+**Status:** ✅ Complete
+**Tests added:** 96 | **Running total:** 523
+
+**Files created:**
+- `backend/tests/regression/test_e01_baseline_basic_rate.py` (24 tests)
+- `backend/tests/regression/test_e02_higher_rate_section24.py` (12 tests)
+- `backend/tests/regression/test_e03_ltd_co_standard.py` (17 tests)
+- `backend/tests/regression/test_e04_lower_leverage_positive.py` (16 tests)
+- `backend/tests/regression/test_e05_high_value_ltd_ated.py` (12 tests)
+- `backend/tests/regression/test_e06_leasehold_higher_rate.py` (15 tests)
+
+**No files modified.**
+
+**Test structure per scenario (TEST_STRATEGY.md Part 7.2):**
+- Module-scoped `e0N_result` fixture: runs engine once, shared across class
+- `TestE0NOutputs`: asserts every EngineOutputs field via `assert_outputs()`
+- `TestE0NIntermediates`: asserts key intermediates individually with
+  explicit expected values and derivation comments
+- `TestE0NFlags`: asserts present flags, absent flags, validation warnings
+
+**Key intermediate assertions per scenario:**
+- E-01: all 29 intermediates covered; Section 24 credit = 1,425.00 offsets
+  gross tax 1,358.62 → zero liability; corporation_tax_gross is None
+- E-02: income_tax_gross = 2,717.24; credit = 1,425.00 (unchanged); liability = 1,292.24
+- E-03: taxable profit = -2,468.20; corporation_tax = 0.00 (not None);
+  income_tax_gross is None; section_24_applies is False
+- E-04: loan = 120,000; stressed = 6,600; credit = 1,140.00; liability = 218.62;
+  pre_tax = 1,093.10; positive cash flow confirmed
+- E-05: ATED (purchase > 500k, Ltd Co); LOW_ICR_BASIC (icr=111.88 < 125);
+  total_sdlt = 38,000 (base 20k + surcharge 18k)
+- E-06: total_operating = 5,174 (includes service charge + ground rent);
+  income_tax_gross = 1,853.32; credit = 1,282.50; liability = 570.82
+
+**Discrepancy note (E-03):** ENGINE_CONTRACTS.md shows icr_percent=127.88.
+Formula arithmetic gives 127.87 (18,460.80 / 14,437.50 × 100). Test uses
+127.87 (correct). Documented in conftest and test docstring.
+
+**Verification (pre-commit):** 96 test functions. ruff: clean. mypy: clean.
 
 ### Commit 2.11 — Regression tests E-07 through E-12 + determinism
 **Status:** ⏳ Not started
