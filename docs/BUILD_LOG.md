@@ -561,3 +561,117 @@ ruff: clean. mypy: clean.
 - DET-11: EngineResult has no timestamp fields (G-3 guarantee).
 
 **Verification (pre-commit):** 59 test functions. ruff: clean. mypy: clean.
+
+**Final verification:** pytest 582 passed. ruff: passed. mypy: passed.
+
+**Post-verification test fixes (4 failures corrected):**
+
+1. *E-07 test_warnings_empty:* V-08 WARN fires alongside V-07 HARD (deposit=25k
+   is below both 15% and 25% thresholds; pipeline evaluates all rules). Added
+   `e07_expected_warnings()` to conftest returning `frozenset({"V-08"})`.
+   Test renamed `test_v08_warn_also_fires`.
+
+2. *E-11 roce_percent (9.30 → 9.99):* Conftest used wrong value.
+   maintenance_reserve = 220,000 × 1% = 2,200 (not 2,000).
+   NOI = 6,593.10; cash_deployed = 66,000; ROCE = 9,593.10/66,000×100 = 9.99.
+
+3. *E-11 icr_percent (150.08 → 120.78) and LOW_ICR_BASIC flag:* Conftest had
+   wrong ICR. loan=165,000; stressed=9,075; ICR=120.78 < 125 → LOW_ICR_BASIC
+   fires. Moved LOW_ICR_BASIC from absent_flags to expected_flags.
+
+4. *DET-07/08 ALTERNATIVE_CONFIG_VOID → ALTERNATIVE_CONFIG_STRESS:*
+   void_rate_percent is an EngineInput field already resolved before engine entry;
+   changing the AssumptionConfig default has no effect. stress_test_rate_percent
+   IS read from EngineConfig at execution time. Tests now use ALTERNATIVE_CONFIG_STRESS.
+
+
+---
+
+## Phase 3 — Database Schema and Migrations
+
+---
+
+### Commit 3.1 — ORM base models
+
+**Message:** `feat(db): SQLAlchemy ORM models for all Phase 1 tables`
+**Status:** ✅ Complete
+**Tests added:** 0 (ORM models only — schema integrity tested in Commit 3.5)
+**Running total:** 582
+
+**Files created:**
+- `backend/app/db/models/__init__.py`
+- `backend/app/db/models/user.py`
+- `backend/app/db/models/investor_profile.py`
+- `backend/app/db/models/property.py`
+- `backend/app/db/models/deal.py` (170 lines — all working input columns)
+- `backend/app/db/models/configuration.py` (177 lines — 5 config models)
+- `backend/app/db/models/snapshot.py` (492 lines — 6 snapshot models)
+- `backend/app/db/models/audit.py`
+
+**Column type mapping (IMPLEMENTATION_ROADMAP.md Commit 3.1):**
+NUMERIC(15,6) → Numeric(15,6); NUMERIC(10,6) → Numeric(10,6);
+NUMERIC(15,10) → Numeric(15,10) [void_rate_decimal_applied];
+JSONB → JSONB [sdlt_band_breakdown]; UUID PKs with gen_random_uuid();
+DateTime(timezone=True) with now() server_default.
+
+**Key decisions:**
+- All enum types use create_type=False — created by migration (Commit 3.2)
+- All FK columns are plain UUID columns — FK constraints added by migration
+- snapshot_calculations.is_superseded is the only mutable snapshot column
+- SnapshotInputs includes _source column per optional input (ADR-009)
+- No ORM relationships defined in this commit (scope: column definitions only)
+
+**Verification:** 8 files syntax-clean. ruff: clean. mypy: clean.
+pytest: 582 passed (no new tests).
+
+---
+
+### Commit 3.2 — Alembic migration: initial schema
+
+**Message:** `migration: initial schema — all Phase 1 tables`
+**Status:** ✅ Complete
+**Tests added:** 0 (migration integrity tested in Commit 3.5)
+**Running total:** 582
+
+**Files created:**
+- `backend/alembic/versions/0001_initial_schema.py` (≈1250 lines)
+
+**Migration creates (in dependency order):**
+1. PostGIS extension (`CREATE EXTENSION IF NOT EXISTS postgis`)
+2. 11 PostgreSQL enum types (all from DATABASE_SCHEMA_DESIGN.md Section 1)
+3. `users` — no FK dependencies
+4. `investor_profiles` — FK → users
+5. `properties` — FK → users
+6. `deals` — FK → users, properties, investor_profiles; `latest_snapshot_id` column created without FK (deferred)
+7. `config_engine_versions` — no FK dependencies; TEXT primary key
+8. `config_sdlt_versions` — FK → users (nullable); UNIQUE (effective_from, property_country)
+9. `config_sdlt_bands` — FK → config_sdlt_versions; UNIQUE (sdlt_version_id, band_order)
+10. `config_corporation_tax_versions` — FK → users (nullable); UNIQUE (effective_from)
+11. `config_assumption_versions` — FK → users (nullable); UNIQUE (effective_from)
+12. `snapshot_calculations` — FK → deals, users, three config tables
+13. `deals.latest_snapshot_id` FK → snapshot_calculations — added via `op.create_foreign_key()` to resolve circular dependency
+14. `snapshot_inputs` — FK → snapshot_calculations; UNIQUE INDEX on snapshot_id (enforces 1:1)
+15. `snapshot_outputs` — FK → snapshot_calculations; UNIQUE INDEX on snapshot_id (enforces 1:1)
+16. `snapshot_intermediates` — FK → snapshot_calculations; UNIQUE INDEX on snapshot_id (enforces 1:1)
+17. `snapshot_risk_flags` — FK → snapshot_calculations (one-to-many)
+18. `snapshot_validation_warnings` — FK → snapshot_calculations (one-to-many)
+19. `audit_calculations` — FK → users, deals, snapshot_calculations (nullable)
+20. All 25 indexes from DATABASE_SCHEMA_DESIGN.md Section 8
+
+**Totals:**
+- Tables: 16
+- Enum types: 11
+- Foreign keys: 23 (all ON DELETE RESTRICT)
+- CHECK constraints: 78
+- Named indexes (op.create_index): 25 (3 unique, 22 non-unique)
+- Implicit unique indexes from sa.UniqueConstraint: 5 (users, config_sdlt_versions, config_sdlt_bands, config_ct_versions, config_assumption_versions)
+
+**Circular dependency resolution:**
+`deals.latest_snapshot_id → snapshot_calculations` and `snapshot_calculations.deal_id → deals` form a mutual reference. Resolved by creating `latest_snapshot_id` as a bare nullable UUID column inside `op.create_table("deals")` — no FK — then calling `op.create_foreign_key("fk_deals_snapshot_calculations", ...)` after `snapshot_calculations` exists (Step 13).
+
+**Uniqueness correction applied:**
+`snapshot_inputs`, `snapshot_outputs`, `snapshot_intermediates` initially had both `unique=True` on the column inside `op.create_table()` AND `op.create_index(..., unique=True)` — producing duplicate unique indexes. Confirmed via `DATABASE_SCHEMA_DESIGN.md` Section 3 (column attribute) and Section 8 (index) that these describe one database object. Column-level `unique=True` removed from all three; enforcement retained solely in the named unique index.
+
+**Downgrade:** intentional no-op per `PERSISTENCE_ARCHITECTURE.md` Part 14.2. All tables created are immutable (snapshot_*, config_*, audit_calculations). Dropping them would destroy historical data. Development reset requires dropping and recreating the database.
+
+**Verification:** ruff: All checks passed. mypy: Success, no issues found. pytest: 582 passed (no new tests — migration integrity tested in Commit 3.5).
