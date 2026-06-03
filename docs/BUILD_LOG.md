@@ -778,3 +778,47 @@ SELECT, INSERT on all 16 tables. No UPDATE or DELETE anywhere — per schema: "E
 **Not collected by `make test-unit`** — integration tests only run via `make test-int` which starts the test DB first.
 
 **Verification:** `make test-unit`: 582 passed. ruff: All checks passed. mypy: No issues in 49 source files. Integration tests: 120 collected cleanly (not executed — no test DB in CI without `make dev-db-test`).
+
+---
+
+## Phase 4 — Repository Layer
+
+---
+
+### Commit 4.1 — Repository interfaces
+
+**Message:** `feat(repositories): abstract repository interfaces`
+**Status:** ✅ Complete
+**Tests added:** 0 (interfaces only — tested via implementations in Commits 4.3–4.5)
+**Running total:** 582
+
+**Files created:**
+- `backend/app/repositories/__init__.py`
+- `backend/app/repositories/pagination.py` — `PageRequest`, `Page[T]` (Commit 4.2 content included here; interfaces require these types)
+- `backend/app/repositories/interfaces/__init__.py` — re-exports all interfaces and types
+- `backend/app/repositories/interfaces/i_user.py` — `IUserRepository`
+- `backend/app/repositories/interfaces/i_investor_profile.py` — `IInvestorProfileRepository`
+- `backend/app/repositories/interfaces/i_property.py` — `IPropertyRepository`
+- `backend/app/repositories/interfaces/i_deal.py` — `IDealRepository` + `DealSummary`
+- `backend/app/repositories/interfaces/i_snapshot.py` — `ISnapshotRepository` + `SnapshotSummary` + `SnapshotHistoryEntry`
+- `backend/app/repositories/interfaces/i_configuration.py` — `IConfigurationRepository` + `EngineVersionRecord` + summary projection types
+- `backend/app/repositories/interfaces/i_audit.py` — `IAuditRepository` + `CalculationAuditEvent`
+
+**All interfaces use `typing.Protocol` with `@runtime_checkable`. All methods are `async def`. No inheritance required from implementations.**
+
+**Projection types defined:**
+- `DealSummary` — lightweight read projection for deal list views (in `i_deal.py`)
+- `SnapshotSummary` — DISPLAY-level projection: root + outputs + flags + warnings (in `i_snapshot.py`)
+- `SnapshotHistoryEntry` — SUMMARY-level projection: root + key metrics + flag counts (in `i_snapshot.py`)
+- `CalculationAuditEvent` — domain representation of one audit record (in `i_audit.py`)
+- `EngineVersionRecord`, `SDLTConfigurationSummary`, `CorporationTaxConfigSummary`, `AssumptionConfigSummary` (in `i_configuration.py`)
+
+**Configuration type aliases:** `SDLTConfiguration = SDLTConfig`, `CorporationTaxConfiguration = CorporationTaxConfig`, `AssumptionConfiguration = AssumptionConfig` — aliased from engine contracts so repository config output is directly usable by the engine.
+
+**Pagination types (pagination.py):** `PageRequest` (limit 1–100, cursor decode), `Page[T]` (items, next_cursor, total_count, cursor encode). Full implementation included — Commit 4.2 is a subset of what's here.
+
+**Architecture invariants covered:** RI-01 through RI-15 from REPOSITORY_ARCHITECTURE.md Part 20. Each interface method is documented with the relevant invariant where applicable.
+
+**Ruff fix:** 3 × `I001` import-sort errors auto-fixed in `i_deal.py`, `i_snapshot.py`, `i_audit.py`.
+
+**Verification:** pytest: 582 passed. ruff: All checks passed. mypy: Success, no issues found in 59 source files.
