@@ -52,6 +52,7 @@ class Property:
     # Classification
     property_type: PropertyType
     tenure: Tenure              # immutable after creation
+    lease_years_remaining: int | None = None  # required for LEASEHOLD (DB constraint)
 
     # Detail (optional)
     bedrooms: int | None = None

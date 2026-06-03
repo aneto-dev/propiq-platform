@@ -931,3 +931,41 @@ No files were created or modified. Commit 4.2 content was delivered in Commit 4.
 - `update()` persists label change; does not modify user_id
 
 **Verification:** pytest (unit): 582 passed. ruff: All checks passed. mypy: Success, no issues found in 62 source files. Integration tests: 21 collected (9 user + 12 investor_profile).
+
+---
+
+### Commit 4.5 — Property repository
+
+**Message:** `feat(repositories): property repository implementation`
+**Status:** ✅ Complete
+**Tests added:** 13 (integration — require test DB, run via `make test-int`)
+**Running total (unit):** 582 | **Integration:** 171
+
+**Files created:**
+- `backend/app/repositories/property_repository.py`
+- `backend/tests/integration/repositories/test_property_repository.py` (13 tests)
+
+**Files modified:**
+- `backend/app/domain/entities/property.py` — added `lease_years_remaining: int | None = None`
+
+**Domain entity correction:**
+`Property` was missing `lease_years_remaining` from its field list. The ORM model (`properties` table) has this column with a CHECK constraint `NOT (tenure = 'LEASEHOLD' AND lease_years_remaining IS NULL)`, confirming it is required for LEASEHOLD properties. The field was omitted from the domain entity in Commit 1.4. Added as an optional field after `tenure` — required by service layer to be non-None when tenure is LEASEHOLD.
+
+**PropertyRepository implementation:**
+- Constructor takes `AsyncSession` (injected — RI-07, RI-08)
+- `save(property)` — `session.add()` with all ORM columns including `lease_years_remaining`
+- `update(property)` — `update()` statement on mutable address fields, property_type, bedrooms, epc_rating, is_archived, archived_at; **tenure explicitly excluded** (immutability — RI-05)
+- `find_by_id(property_id)` — SELECT by PK
+- `find_by_id_for_user(property_id, user_id)` — SELECT by PK AND user_id; returns None for both failure modes (RI-06)
+- `find_all_for_user(user_id, include_archived, page)` — keyset pagination on (created_at DESC, id DESC); separate count query for total_count; fetches limit+1 to detect next page
+- `_to_domain(row)` — ORM → Property with PropertyAddress value object construction and defensive enum coercion
+
+**Tests (all three roadmap-specified cases + additional coverage):**
+- `find_by_id_for_user` returns None for correct ID but **wrong user** (RI-06) ✅
+- `update()` does not modify tenure column — address change persists, tenure stays FREEHOLD ✅
+- Archived property **still returned** by `find_by_id_for_user` (no active-only filter on single-record lookup) ✅
+- Save/find roundtrip for freehold and leasehold (with `lease_years_remaining=85`) ✅
+- `find_all_for_user` excludes/includes archived by flag ✅
+- Pagination: cursor-based second page has no overlap with first page ✅
+
+**Verification:** pytest (unit): 582 passed. ruff: All checks passed (1 import-sort auto-fixed). mypy: Success, no issues found in 63 source files. Integration tests: 13 collected.
