@@ -1008,3 +1008,42 @@ No files were created or modified. Commit 4.2 content was delivered in Commit 4.
 **Additional tests:** save/find roundtrip with full working inputs; status filter; DRAFT deal has null snapshot fields in DealSummary; optional inputs clear to None on update; count_for_user excludes ARCHIVED.
 
 **Verification:** pytest (unit): 582 passed. ruff: All checks passed (1 import-sort auto-fixed). mypy: Success, no issues found in 64 source files. Integration tests: 16 collected.
+
+---
+
+### Commit 4.7 — Audit repository
+
+**Message:** `feat(repositories): audit repository — append-only implementation`
+**Status:** ✅ Complete
+**Tests added:** 9 (integration — require test DB, run via `make test-int`)
+**Running total (unit):** 582 | **Integration:** 196
+
+**Files created:**
+- `backend/app/repositories/audit_repository.py`
+- `backend/tests/integration/repositories/test_audit_repository.py` (9 tests)
+
+**AuditRepository implementation:**
+- Constructor takes `AsyncSession` (injected — RI-07, RI-08)
+- `save(event)` — `session.add()` with AuditCalculation ORM row; the only write operation (no update or delete — RI-05)
+- `find_history_for_deal(deal_id, page)` — delegates to `_paginated_query` with `deal_id == deal_id` predicate
+- `find_history_for_user(user_id, page)` — delegates to `_paginated_query` with `user_id == user_id` predicate
+- `_paginated_query(predicate, page)` — shared keyset-paginated query; ordered by triggered_at DESC, id DESC; cursor encoded using `triggered_at` as the sort key (consistent with `Page.encode_cursor` interface)
+- `_to_domain(row)` — ORM → CalculationAuditEvent with defensive enum coercion
+
+**mypy fix:** Original `_paginated_query` accepted `where_col: object` + `where_val: uuid.UUID`, which produced `bool` typed expressions — 4 `arg-type` errors and 2 `unused-ignore` errors. Restructured to accept `predicate: ColumnElement[bool]`; callers construct the expression at call site. Added `ColumnElement` import from sqlalchemy.
+
+**Tests — all three roadmap-specified cases:**
+- `save()` inserts SUCCESS audit event; retrieved via `find_history_for_deal` ✅
+- No `update()` or `delete()` method on interface or implementation ✅
+- `find_history_for_deal` returns events in **triggered_at DESC order** — inserted in non-chronological order, asserts newest-first ✅
+
+**Additional tests:**
+- `save()` VALIDATION_FAILURE event — snapshot_id=None, validation_errors persisted as JSONB ✅
+- `save()` ENGINE_ERROR event — error_detail persisted, client_context=None ✅
+- `find_history_for_deal` returns only that deal's events (not sibling deals) ✅
+- `find_history_for_deal` returns empty page with total_count=0 when no events ✅
+- `find_history_for_user` returns events across multiple deals, excludes other users ✅
+
+**Note on SUCCESS event test:** DB CHECK constraint `audit_calculations_success_requires_snapshot` requires snapshot_id IS NOT NULL for SUCCESS outcome. Test inserts a minimal stub `snapshot_calculations` row (raw SQL, using seeded config UUIDs) to satisfy the FK before saving the audit event.
+
+**Verification:** pytest (unit): 582 passed. ruff: All checks passed (1 import-sort auto-fixed). mypy: Success, no issues found in 65 source files. Integration tests: 9 collected.
