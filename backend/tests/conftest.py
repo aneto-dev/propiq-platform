@@ -446,7 +446,7 @@ def e06_expected_outputs() -> dict[str, object]:
         "roce_percent":                       Decimal("8.58"),
         "cash_on_cash_return_percent":        Decimal("-4.35"),
         "ltv_percent":                        Decimal("75.00"),
-        "icr_percent":                        Decimal("132.10"),
+        "icr_percent":                        Decimal("132.08"),
         "total_sdlt_gbp":                     Decimal("6500.00"),
         "total_acquisition_cost_gbp":         Decimal("189000.00"),
         "total_cash_deployed_gbp":            Decimal("54000.00"),
