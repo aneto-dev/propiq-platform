@@ -969,3 +969,42 @@ No files were created or modified. Commit 4.2 content was delivered in Commit 4.
 - Pagination: cursor-based second page has no overlap with first page ✅
 
 **Verification:** pytest (unit): 582 passed. ruff: All checks passed (1 import-sort auto-fixed). mypy: Success, no issues found in 63 source files. Integration tests: 13 collected.
+
+---
+
+### Commit 4.6 — Deal repository
+
+**Message:** `feat(repositories): deal repository implementation`
+**Status:** ✅ Complete
+**Tests added:** 16 (integration — require test DB, run via `make test-int`)
+**Running total (unit):** 582 | **Integration:** 187
+
+**Files created:**
+- `backend/app/repositories/deal_repository.py`
+- `backend/tests/integration/repositories/test_deal_repository.py` (16 tests)
+
+**DealRepository implementation:**
+- Constructor takes `AsyncSession` (injected — RI-07, RI-08)
+- `save(deal)` — `session.add()` mapping all 19 working_input columns from `DealWorkingInputs` to `DealORM`
+- `update(deal)` — `update()` statement on mutable fields including all working_input columns; `user_id`, `property_id`, `created_at` explicitly excluded (RI-05)
+- `find_by_id(deal_id)` — SELECT by PK (any user)
+- `find_by_id_for_user(deal_id, user_id)` — SELECT by PK AND user_id; returns None for both failure modes (RI-06)
+- `find_all_for_user(user_id, status_filter, page)` — keyset pagination on (updated_at DESC, id DESC); LEFT JOINs snapshot_outputs and snapshot_calculations via `deals.latest_snapshot_id`; HIGH flag count via correlated subquery; DRAFT deals have None for all latest_snapshot_* fields
+- `find_all_for_property(property_id, user_id)` — ownership-filtered, unpaginated list (RI-09)
+- `count_for_user(user_id)` — counts non-ARCHIVED deals
+- `_to_domain(row)` — ORM → Deal + DealWorkingInputs; all Decimal columns wrapped in `Decimal(str(...))` for precision (RI-13); defensive enum coercion for asyncpg compatibility
+- `_row_to_summary(row)` — joined Row → DealSummary projection; typed as `Row` (SQLAlchemy) to satisfy mypy
+
+**mypy fix:** `_row_to_summary` parameter annotated as `Row` (type-arg suppressed with `# type: ignore[type-arg]`) — SQLAlchemy `Row` is generic but column names are dynamically constructed; `object` type caused 16 attr-defined errors.
+
+**Tests — all four roadmap-specified cases:**
+- `find_by_id_for_user` returns None for **wrong user** (RI-06) ✅
+- `find_by_id_for_user` returns None for **not found** (RI-06) ✅
+- `find_all_for_user` **pagination with cursor** — second page has no overlap with first ✅
+- `update()` **persists working_inputs changes** ✅
+- `update()` **does not modify user_id** ✅
+- `update()` **does not modify property_id** ✅
+
+**Additional tests:** save/find roundtrip with full working inputs; status filter; DRAFT deal has null snapshot fields in DealSummary; optional inputs clear to None on update; count_for_user excludes ARCHIVED.
+
+**Verification:** pytest (unit): 582 passed. ruff: All checks passed (1 import-sort auto-fixed). mypy: Success, no issues found in 64 source files. Integration tests: 16 collected.
