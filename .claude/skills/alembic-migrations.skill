@@ -1,0 +1,54 @@
+---
+name: alembic-migrations
+description: PropIQ migration standards.
+---
+
+# Authority
+
+DATABASE_SCHEMA_DESIGN.md
+
+# Migration Rules
+
+Every schema change requires:
+
+upgrade()
+downgrade()
+
+# Naming
+
+Revision messages:
+
+create_users_table
+create_snapshot_tables
+add_property_indexes
+
+# Constraints
+
+Always create explicit:
+
+- PK
+- FK
+- UNIQUE
+- CHECK
+
+# Indexes
+
+Add indexes for:
+
+- foreign keys
+- search fields
+- frequently filtered columns
+
+# ENUMs
+
+Create ENUM before table creation.
+
+Drop ENUM only when safe.
+
+# Forbidden
+
+No data migrations mixed with schema migrations.
+
+No business logic.
+
+No seed data.

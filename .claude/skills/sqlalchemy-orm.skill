@@ -1,0 +1,85 @@
+---
+name: sqlalchemy-orm
+description: PropIQ SQLAlchemy ORM conventions and standards.
+---
+
+# Authority
+
+DATABASE_SCHEMA_DESIGN.md is authoritative.
+
+This skill only defines implementation conventions.
+
+# ORM Standards
+
+- SQLAlchemy 2.x typed ORM.
+- Use DeclarativeBase.
+- Use Mapped[] and mapped_column().
+- PostgreSQL is the target database.
+
+Example:
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[UUID]
+    email: Mapped[str]
+
+# Primary Keys
+
+- UUID primary keys.
+- Generated server-side where possible.
+- Never use integer identity keys for domain entities.
+
+# Timestamps
+
+Every mutable entity includes:
+
+created_at
+updated_at
+
+UTC only.
+
+# Naming
+
+Tables:
+snake_case plural
+
+Columns:
+snake_case
+
+Indexes:
+ix_<table>_<column>
+
+Foreign Keys:
+fk_<source>_<target>
+
+# Relationships
+
+Always define both sides.
+
+Use lazy="selectin".
+
+Avoid circular imports.
+
+# Enums
+
+Use Python Enum.
+
+Persist as PostgreSQL ENUM.
+
+# Constraints
+
+Represent constraints both:
+
+- database level
+- application validation level
+
+# Forbidden
+
+No business logic.
+
+No calculation logic.
+
+No service logic.
+
+ORM models are persistence only.

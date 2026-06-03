@@ -1,0 +1,53 @@
+---
+name: snapshot-architecture
+description: PropIQ snapshot persistence architecture.
+---
+
+# Authority
+
+DATABASE_SCHEMA_DESIGN.md
+
+ENGINE_CONTRACTS.md
+
+# Core Principle
+
+Snapshots are immutable.
+
+Never update a snapshot.
+
+Never recalculate a stored snapshot.
+
+# Snapshot Stores
+
+snapshot_inputs
+
+snapshot_outputs
+
+snapshot_intermediates
+
+snapshot_risk_flags
+
+snapshot_validation_warnings
+
+# Requirements
+
+Store:
+
+- input values
+- output values
+- intermediates
+- flags
+- warnings
+- assumption versions
+
+# Historical Reproducibility
+
+A snapshot must always reproduce the exact result originally generated.
+
+# Forbidden
+
+No edits.
+
+No overwrite operations.
+
+No recalculation during reads.

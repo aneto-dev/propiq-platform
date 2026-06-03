@@ -1,0 +1,43 @@
+---
+name: assumptions-versioning
+description: PropIQ assumption and configuration versioning.
+---
+
+# Authority
+
+DATABASE_SCHEMA_DESIGN.md
+
+CALCULATION_SPEC.md
+
+# Principle
+
+No hard-coded assumptions.
+
+Everything is versioned.
+
+# Version Records
+
+Store:
+
+effective_from
+effective_to
+source_url
+last_verified_at
+
+# Historical Accuracy
+
+Old deals continue using the versions active when they were created.
+
+# Configuration
+
+Append-only.
+
+Never mutate historical versions.
+
+# Forbidden
+
+No magic numbers.
+
+No embedded rates.
+
+No hard-coded SDLT values.

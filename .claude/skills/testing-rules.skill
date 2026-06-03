@@ -1,0 +1,48 @@
+---
+name: testing-rules
+description: PropIQ testing standards.
+---
+
+# Authority
+
+TEST_STRATEGY.md
+
+ENGINE_CONTRACTS.md
+
+# Regression Tests
+
+Never change expected values without documented justification.
+
+# Determinism Tests
+
+Repeated executions must return identical outputs.
+
+# Decimal Handling
+
+Use Decimal.
+
+No float comparisons.
+
+Round only at documented boundaries.
+
+# Validation
+
+Test:
+
+- hard failures
+- warnings
+- risk flags
+
+# Engine Rules
+
+Do not modify formulas to satisfy tests.
+
+Fix tests only if documentation proves the expectation is wrong.
+
+# Forbidden
+
+No hidden fixtures.
+
+No random data.
+
+No time-dependent assertions.
