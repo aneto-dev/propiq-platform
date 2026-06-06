@@ -1100,3 +1100,55 @@ No files were created or modified. Commit 4.2 content was delivered in Commit 4.
 **`tests/integration/snapshots/conftest.py`:** `make_e01_snapshot()` builds a complete `CalculationSnapshot` from ENGINE_CONTRACTS.md E-01 hardcoded values without running the engine. Shared across all 3 snapshot sub-test files.
 
 **Verification:** pytest (unit): 582 passed. ruff: All checks passed (12 auto-fixed). mypy: Success, no issues found in 66 source files. Integration tests: 34 collected (17 repository + 4 completeness + 8 immutability + 5 comparison).
+
+---
+
+## Migration Rebuild — clean-migration-baseline branch
+
+### Migration Baseline Rebuild
+
+**Branch:** `clean-migration-baseline` (from `migration-debug-backup`)
+**Status:** ✅ Complete — `alembic upgrade head` verified clean
+
+**Root cause of prior migration failure:**
+During `make test-int`, two independent session-scoped `autouse=True` fixtures both called `alembic upgrade head`:
+- `repo_db_setup` in `tests/integration/repositories/conftest.py`
+- `db_schema` in `tests/integration/test_schema_integrity.py`
+
+Both targeted the same test database. Alembic uses `CREATE TYPE foo AS ENUM (...)` per `op.execute()` call in the original 0001 migration. Because enum types are schema-scoped objects, `DROP SCHEMA ... CASCADE` between the two fixture runs should have cleared them — but the original migration's manual `CREATE TYPE` statements had no idempotency guard, making them fragile to any scenario where the type already existed.
+
+**Decision:** Rather than patch `0001` with `IF NOT EXISTS`, rebuild the migration baseline using SQLAlchemy/Alembic's native enum handling (`sa.Enum(..., name='foo')` inside `op.create_table()`). SQLAlchemy emits `CREATE TYPE` automatically for the first table that references each named enum, and does not re-emit it for subsequent tables. This is inherently idempotent within a single migration run and eliminates the duplicate-creation risk entirely.
+
+**Files deleted:**
+- `backend/alembic/versions/0001_initial_schema.py`
+- `backend/alembic/versions/0002_database_roles.py`
+
+**Files created:**
+- `backend/alembic/versions/20260606_0026_1d56deba40c1_initial_schema_from_models.py`
+
+**Files modified:**
+- `backend/alembic/env.py` — added explicit model imports so `Base.metadata` is populated before autogenerate inspects it (required for `alembic revision --autogenerate` to detect tables)
+
+**Migration approach:**
+1. Ran `alembic revision --autogenerate -m "initial schema from models"` against a clean test database
+2. Autogenerate produced correct table schemas and enum handling but with wrong table creation order due to the circular FK between `deals` ↔ `snapshot_calculations`
+3. Alembic warning confirmed: *"Cannot correctly sort tables; there are unresolvable cycles between tables 'deals, snapshot_calculations'"*
+4. Manually corrected the table creation order to follow the dependency graph
+5. Removed `deals.latest_snapshot_id → snapshot_calculations` FK from the `deals` CREATE TABLE
+6. Added `op.create_foreign_key('fk_deals_latest_snapshot_id', ...)` after `snapshot_calculations` exists
+7. Added `op.execute("CREATE EXTENSION IF NOT EXISTS postgis")` at the top
+
+**Correct table creation order (16 application tables):**
+`config_engine_versions` → `users` → `investor_profiles` → `properties` → `config_sdlt_versions` → `config_corporation_tax_versions` → `config_assumption_versions` → `deals` (no latest_snapshot_id FK) → `snapshot_calculations` → **deferred FK** → `snapshot_inputs` → `snapshot_outputs` → `snapshot_intermediates` → `snapshot_risk_flags` → `snapshot_validation_warnings` → `audit_calculations` → `config_sdlt_bands`
+
+**Verification against clean test database (`propiq_test`, port 5433):**
+- `alembic upgrade head`: success, no errors
+- `alembic_version`: revision `1d56deba40c1` recorded
+- All 16 application tables present
+- All 11 enum types present
+- PostGIS 3.4 enabled (`USE_GEOS=1 USE_PROJ=1 USE_STATS=1`)
+- `fk_deals_latest_snapshot_id` constraint present on `deals`
+- No `DuplicateObjectError`
+- No `UndefinedTableError`
+
+**Note:** The `0002_database_roles.py` migration (propiq_app / propiq_admin role grants) was also deleted. Database role privileges are a deployment concern and should be re-added as a separate migration in Phase 8 when the Railway deployment is configured. For local development and integration testing, the default superuser role is used.
