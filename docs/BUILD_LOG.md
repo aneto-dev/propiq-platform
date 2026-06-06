@@ -828,40 +828,68 @@ SELECT, INSERT on all 16 tables. No UPDATE or DELETE anywhere — per schema: "E
 ### Commit 4.3 — Configuration repository
 
 **Message:** `feat(repositories): configuration repository implementation`
-**Status:** ✅ Complete
-**Tests added:** 17 (integration — require test DB, run via `make test-int`)
-**Running total (unit):** 582 | **Integration:** 137
+**Commit:** `738ae47`
+**Status:** ✅ Complete — verified on `clean-migration-baseline` branch, 2026-06-06
+**Tests now passing:** 812 total (all previously-failing integration tests resolved)
+**Running total:** 812 (427 unit + 385 integration/regression/determinism)
 
-**Files created:**
+**File created (this commit):**
+- `backend/tests/integration/conftest.py` — integration test fixture root
+
+**Files already present from prior sessions (not modified in this commit):**
 - `backend/app/repositories/configuration_repository.py`
 - `backend/tests/integration/repositories/__init__.py`
-- `backend/tests/integration/repositories/conftest.py`
 - `backend/tests/integration/repositories/test_configuration_repository.py`
 
-**Implementation (`ConfigurationRepository`):**
-- Constructor takes `AsyncSession` (injected; does not open/close sessions — RI-07, RI-08)
-- `find_active_sdlt_config(as_of_date)` — SELECT + LIMIT 1 by `effective_from DESC`, then second query for bands; raises `ConfigurationNotFoundError` if none found
-- `find_sdlt_config_by_id(version_id)` — SELECT by PK, then bands; raises if not found
-- `find_active_corporation_tax_config(as_of_date)` — same active-version pattern
-- `find_corporation_tax_config_by_id(version_id)` — SELECT by PK
-- `find_active_assumption_config(as_of_date)` — same active-version pattern
-- `find_assumption_config_by_id(version_id)` — SELECT by PK
-- `_to_sdlt_domain(version, bands)` — ORM rows → `SDLTConfig` (per roadmap spec)
-- `_to_ct_domain(row)` — ORM row → `CorporationTaxConfig`
-- `_to_assumption_domain(row)` — ORM row → `AssumptionConfig`
-- All numeric values wrapped in `Decimal(str(...))` to enforce RI-13 (no float)
-- Listing and admin write methods: listing implemented; writes raise `NotImplementedError` (no metadata in engine contract types)
+**What was missing:** `tests/integration/conftest.py` did not exist. All 98 integration
+test errors (`fixture 'async_session' not found`) were caused by this single missing file.
+The stub in `tests/integration/repositories/conftest.py` documented that fixtures were
+"intentionally defined once at the integration-test root" — but the root conftest had
+never been written.
 
-**Tests (all 5 roadmap-specified + 12 additional correctness tests):**
-- `find_active_sdlt_config(date(2025,6,1))` → 5 bands, surcharge=0.030000 ✅
-- `find_active_sdlt_config(date(2024,12,31))` → raises `ConfigurationNotFoundError` ✅
-- `find_sdlt_config_by_id(known_uuid)` → correct record ✅
-- `find_sdlt_config_by_id(unknown_uuid)` → raises `ConfigurationNotFoundError` ✅
-- `find_active_assumption_config` → all 11 seed values match exactly ✅
+**Fixtures provided by `tests/integration/conftest.py`:**
 
-**Ruff fixes:** 3 errors auto-fixed (`I001` ×2, `F401` ×1); 1 further fix (`F821` — missing `SDLTConfiguration` import, `F821` — wrong parameter type in `save_sdlt_config`).
+| Fixture | Scope | Purpose |
+|---|---|---|
+| `async_engine` | function | `AsyncEngine` with `NullPool`; created and disposed per test |
+| `async_session` | function | `AsyncSession` derived from `async_engine`; tests may call `commit()` freely |
+| `sdlt_version_id` | function | UUID of seeded `config_sdlt_versions` row; used by `TestFindSdltConfigById` |
 
-**Verification:** pytest (unit): 582 passed. ruff: All checks passed. mypy: Success, no issues found in 60 source files. Integration: 17 tests collected.
+**Implementation decisions:**
+
+- **`NullPool`** — required to prevent `asyncpg` "Future attached to a different loop" errors
+  under `pytest-asyncio 0.24`. Without it, session-scoped fixtures and function-scoped
+  teardown run in different event loops; asyncpg connections cannot be shared across them.
+  `NullPool` disables connection pooling entirely: each `connect()` creates a fresh
+  asyncpg connection; `close()` destroys it. No state survives between tests.
+
+- **Function scope for all fixtures** — session-scoped async fixtures with
+  `loop_scope="session"` do not protect teardown from running in the function event loop.
+  Function-scoped fixtures with `NullPool` are the correct pattern for `pytest-asyncio 0.24`.
+
+- **ORM model imports** — all seven `app.db.models.*` modules are imported at the top of
+  the conftest. Without these, `Base.metadata` is incomplete when SQLAlchemy validates FK
+  references at flush time, producing `NoReferencedTableError` for tables not yet registered
+  (observed specifically on `deals.investor_profile_id → investor_profiles`).
+
+**ConfigurationRepository implementation (pre-existing, verified this commit):**
+- `find_active_sdlt_config(as_of_date)` — returns `SDLTConfig` with 5 bands and surcharge rate
+- `find_sdlt_config_by_id(version_id)` — raises `ConfigurationNotFoundError` for unknown UUIDs
+- `find_active_assumption_config(as_of_date)` — all 11 seed values match exactly (RI-13: Decimal only)
+- `find_active_corporation_tax_config(as_of_date)` — small_profits=19%, main=25%, MR=3/200
+- Effective-date boundary tests: `as_of_date == effective_from` is inclusive (`<=`)
+
+**Verification results:**
+
+| Test group | Count | Result |
+|---|---|---|
+| `tests/integration/repositories/` | 93 | ✅ All passed |
+| `tests/integration/snapshots/` | 17 | ✅ All passed |
+| `tests/integration/test_schema_integrity.py` | 120 | ✅ All passed |
+| `tests/unit/` | 427 | ✅ All passed |
+| `tests/regression/` | ~130 | ✅ All passed |
+| `tests/determinism/` | 11 | ✅ All passed |
+| **Full `poetry run pytest`** | **812** | ✅ **812 passed, 0 failed, 0 errors** |
 
 ---
 
