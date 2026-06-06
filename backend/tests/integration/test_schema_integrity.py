@@ -23,22 +23,11 @@ Architecture:
 
 from __future__ import annotations
 
-import asyncio
-import os
-import subprocess
-from pathlib import Path
-
 import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import get_settings
-
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
-
-_BACKEND_DIR = Path(__file__).parents[2]
 
 # ---------------------------------------------------------------------------
 # Expected schema constants — DATABASE_SCHEMA_DESIGN.md
@@ -166,74 +155,10 @@ NOT_NULL_COLUMNS: list[tuple[str, str]] = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Session fixture — resets test DB, runs migrations, seeds config
-# ---------------------------------------------------------------------------
+
 
 def _test_url() -> str:
     return get_settings().test_database_url
-
-
-async def _reset_schema(url: str) -> None:
-    """Drop and recreate public schema for a clean test slate."""
-    engine = create_async_engine(url, isolation_level="AUTOCOMMIT")
-    async with engine.connect() as conn:
-        await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
-        await conn.execute(text("CREATE SCHEMA public"))
-        await conn.execute(text("GRANT ALL ON SCHEMA public TO CURRENT_USER"))
-        await conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
-    await engine.dispose()
-
-
-def _run_alembic(url: str) -> None:
-    """Run alembic upgrade head against the test database."""
-    env = {**os.environ, "DATABASE_URL": url}
-    result = subprocess.run(
-        ["poetry", "run", "alembic", "upgrade", "head"],
-        cwd=_BACKEND_DIR,
-        env=env,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"alembic upgrade head failed:\n"
-            f"stdout: {result.stdout}\n"
-            f"stderr: {result.stderr}"
-        )
-
-
-def _run_seed(url: str) -> None:
-    """Run the configuration seed script against the test database."""
-    env = {**os.environ, "DATABASE_URL": url}
-    result = subprocess.run(
-        ["poetry", "run", "python", "scripts/seed_configuration.py"],
-        cwd=_BACKEND_DIR,
-        env=env,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"Seed script failed:\n"
-            f"stdout: {result.stdout}\n"
-            f"stderr: {result.stderr}"
-        )
-
-
-@pytest.fixture(scope="session", autouse=True)
-def db_schema() -> None:
-    """
-    Reset the test database, run all migrations, and seed configuration data.
-
-    Session-scoped and autouse — runs once before all tests in this module.
-    Requires the test database to be running (make dev-db-test).
-    """
-    url = _test_url()
-    asyncio.run(_reset_schema(url))
-    _run_alembic(url)
-    _run_seed(url)
-
 
 # ---------------------------------------------------------------------------
 # Query helper

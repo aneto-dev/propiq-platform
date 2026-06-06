@@ -1,0 +1,253 @@
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001, initial schema — all Phase 1 tables
+Traceback (most recent call last):
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 550, in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/asyncpg/prepared_stmt.py", line 176, in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/asyncpg/prepared_stmt.py", line 267, in __bind_execute
+    data, status, _ = await self.__do_execute(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^
+        lambda protocol: protocol.bind_execute(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            self._state, args, '', limit, True, timeout))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/asyncpg/prepared_stmt.py", line 256, in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 206, in bind_execute
+asyncpg.exceptions.DuplicateObjectError: type "user_status_enum" already exists
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 585, in execute
+    self._adapt_connection.await_(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self._prepare_and_execute(operation, parameters)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 563, in _prepare_and_execute
+    self._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 513, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 797, in _handle_exception
+    raise translated_error from error
+sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError: <class 'asyncpg.exceptions.DuplicateObjectError'>: type "user_status_enum" already exists
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/bin/alembic", line 8, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/config.py", line 971, in run_cmd
+    fn(
+    ~~^
+        config,
+        ^^^^^^^
+        *[getattr(options, k, None) for k in positional],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        **{k: getattr(options, k, None) for k in kwarg},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/command.py", line 483, in upgrade
+    script.run_env()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/script/base.py", line 545, in run_env
+    util.load_python_file(self.dir, "env.py")
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 759, in exec_module
+  File "<frozen importlib._bootstrap>", line 491, in _call_with_frames_removed
+  File "/Users/admin/Documents/Projects/propiq-platform/backend/alembic/env.py", line 149, in <module>
+    run_migrations_online()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/admin/Documents/Projects/propiq-platform/backend/alembic/env.py", line 140, in run_migrations_online
+    asyncio.run(run_async_migrations())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/Users/admin/Documents/Projects/propiq-platform/backend/alembic/env.py", line 128, in run_async_migrations
+    await connection.run_sync(do_run_migrations)
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/ext/asyncio/engine.py", line 888, in run_sync
+    return await greenlet_spawn(
+           ^^^^^^^^^^^^^^^^^^^^^
+        fn, self._proxied, *arg, _require_await=False, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+  File "/Users/admin/Documents/Projects/propiq-platform/backend/alembic/env.py", line 110, in do_run_migrations
+    context.run_migrations()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 8, in run_migrations
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/runtime/environment.py", line 969, in run_migrations
+    self.get_context().run_migrations(**kw)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/runtime/migration.py", line 626, in run_migrations
+    step.migration_fn(**kw)
+    ~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/admin/Documents/Projects/propiq-platform/backend/alembic/versions/0001_initial_schema.py", line 103, in upgrade
+    op.create_table(
+    ~~~~~~~~~~~~~~~^
+        "users",
+        ^^^^^^^^
+    ...<26 lines>...
+        ),
+        ^^
+    )
+    ^
+  File "<string>", line 8, in create_table
+  File "<string>", line 3, in create_table
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/operations/ops.py", line 1331, in create_table
+    return operations.invoke(op)
+           ~~~~~~~~~~~~~~~~~^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/operations/base.py", line 452, in invoke
+    return fn(self, operation)
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/operations/toimpl.py", line 140, in create_table
+    operations.impl.create_table(table, **kw)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/alembic/ddl/impl.py", line 439, in create_table
+    table.dispatch.before_create(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        table, self.connection, checkfirst=False, _ddl_runner=self
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/event/attr.py", line 516, in __call__
+    fn(*args, **kw)
+    ~~^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 833, in __call__
+    return getattr(self.target, self.name)(*arg, **kw)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/sql/sqltypes.py", line 1153, in _on_table_create
+    t._on_table_create(target, bind, **kw)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/named_types.py", line 113, in _on_table_create
+    self.create(bind=bind, checkfirst=checkfirst)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/named_types.py", line 369, in create
+    super().create(bind, checkfirst=checkfirst)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/named_types.py", line 56, in create
+    bind._run_ddl_visitor(self.DDLGenerator, self, checkfirst=checkfirst)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 2469, in _run_ddl_visitor
+    ).traverse_single(element)
+      ~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/sql/visitors.py", line 661, in traverse_single
+    return meth(obj, **kw)
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/named_types.py", line 186, in visit_enum
+    self.connection.execute(CreateEnumType(enum))
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/sql/ddl.py", line 188, in _execute_on_connection
+    return connection._execute_ddl(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1532, in _execute_ddl
+    ret = self._execute_context(
+        dialect,
+    ...<4 lines>...
+        compiled,
+    )
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 585, in execute
+    self._adapt_connection.await_(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self._prepare_and_execute(operation, parameters)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 563, in _prepare_and_execute
+    self._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 513, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/admin/Library/Caches/pypoetry/virtualenvs/propiq-backend-7lHqIK0n-py3.14/lib/python3.14/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 797, in _handle_exception
+    raise translated_error from error
+sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.DuplicateObjectError'>: type "user_status_enum" already exists
+[SQL: CREATE TYPE user_status_enum AS ENUM ()]
+(Background on this error at: https://sqlalche.me/e/20/f405)

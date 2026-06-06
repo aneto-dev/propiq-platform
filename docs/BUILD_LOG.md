@@ -1047,3 +1047,56 @@ No files were created or modified. Commit 4.2 content was delivered in Commit 4.
 **Note on SUCCESS event test:** DB CHECK constraint `audit_calculations_success_requires_snapshot` requires snapshot_id IS NOT NULL for SUCCESS outcome. Test inserts a minimal stub `snapshot_calculations` row (raw SQL, using seeded config UUIDs) to satisfy the FK before saving the audit event.
 
 **Verification:** pytest (unit): 582 passed. ruff: All checks passed (1 import-sort auto-fixed). mypy: Success, no issues found in 65 source files. Integration tests: 9 collected.
+
+---
+
+### Commit 4.8 — Snapshot repository
+
+**Message:** `feat(repositories): snapshot repository with atomic save`
+**Status:** ✅ Complete
+**Tests added:** 34 (integration — require test DB, run via `make test-int`)
+**Running total (unit):** 582 | **Integration:** 230
+
+**Files created:**
+- `backend/app/repositories/snapshot_repository.py`
+- `backend/tests/integration/repositories/test_snapshot_repository.py` (17 tests)
+- `backend/tests/integration/snapshots/__init__.py`
+- `backend/tests/integration/snapshots/conftest.py` — E-01 snapshot builder and DB helpers
+- `backend/tests/integration/snapshots/test_snapshot_completeness.py` (4 tests)
+- `backend/tests/integration/snapshots/test_snapshot_immutability_structure.py` (8 tests)
+- `backend/tests/integration/snapshots/test_snapshot_comparison.py` (5 tests)
+
+**SnapshotRepository implementation:**
+
+`save()` — adds 6 ORM rows to the session + executes UPDATE on `deals.latest_snapshot_id`. The caller's commit makes all 7 writes atomic (RI-01, RI-02). No `begin_nested()` required — session autobegin guarantees atomicity at commit.
+
+`find_by_id()` — 6 separate indexed SELECT queries (root + inputs + outputs + intermediates + flags + warnings). No JOINs per REPOSITORY_ARCHITECTURE.md Part 7.1.
+
+`find_by_id_outputs_only()` — 3 queries (root + outputs + flags/warnings). Returns `SnapshotSummary` — no intermediates, no inputs (Part 7.2).
+
+`find_history_for_deal()` — 1 aggregating query with LEFT JOINs to `snapshot_outputs` for key metrics and a subquery for flag counts by severity. Returns `list[SnapshotHistoryEntry]` ordered by calculated_at DESC (Part 7.3).
+
+`mark_superseded()` — single UPDATE setting `is_superseded=True` and `superseded_at`. The only permitted mutation on any snapshot table (RI-03).
+
+**Type mapping:**
+- ORM `Decimal` → `Money(Decimal(str(...)))` for monetary fields (RI-13 — no precision loss)
+- ORM `Decimal` → `Rate(Decimal(str(...)))` for percentage fields
+- ORM `JSONB` list → `tuple[SDLTBandResult, ...]` via `_map_sdlt_bands_from_jsonb`; stored with all-string values per DATABASE_SCHEMA_DESIGN.md Part 3.3; `band_upper=None` for the top band
+
+**mypy fixes (6 iterations before clean):**
+- `_map_outputs(outputs_row)` — `outputs_row: object | None` after assert; `# type: ignore[arg-type]`
+- `_map_flag`/`_map_warning` in list comprehensions over `list[object]` — `# type: ignore[arg-type]` (×2 locations)
+- `_fetch_one`/`_fetch_many` — annotated local variable as `Result` with inline import to resolve `[var-annotated]`
+- `_sdlt_bands_to_jsonb` return type — `list[dict[str, str | None]]`
+- `_map_sdlt_bands_from_jsonb` param type — `list[dict[str, str | None]]`; `Decimal(str(None))` guard — wrapped all values in `str()`
+
+**Test structure — all 4 roadmap-specified cases:**
+- **Atomic save** — `test_all_six_sub_tables_written` counts rows in all 6 tables after commit; `test_save_updates_deals_latest_snapshot_id` verifies deal pointer updated ✅
+- **Full roundtrip** — outputs, inputs, intermediates, SDLT band breakdown, risk flags all assert exact E-01 values ✅
+- **`find_by_id_outputs_only` does NOT load intermediates** — asserts `SnapshotSummary` has no `intermediates` or `inputs` attribute ✅
+- **`mark_superseded()` sets both `is_superseded` and `superseded_at`** — verified after reload; other fields unchanged ✅
+- **No update methods** — `ISnapshotRepository` and `SnapshotRepository` both lack `update()`/`delete()` ✅
+
+**`tests/integration/snapshots/conftest.py`:** `make_e01_snapshot()` builds a complete `CalculationSnapshot` from ENGINE_CONTRACTS.md E-01 hardcoded values without running the engine. Shared across all 3 snapshot sub-test files.
+
+**Verification:** pytest (unit): 582 passed. ruff: All checks passed (12 auto-fixed). mypy: Success, no issues found in 66 source files. Integration tests: 34 collected (17 repository + 4 completeness + 8 immutability + 5 comparison).
