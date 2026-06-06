@@ -17,14 +17,38 @@ from typing import Protocol, runtime_checkable
 from app.engine.contracts import AssumptionConfig, CorporationTaxConfig, SDLTConfig
 
 # ---------------------------------------------------------------------------
-# Type aliases — repository layer uses descriptive names; underlying types
-# are the engine contract definitions. This ensures the configuration loaded
-# by the repository is directly usable by the engine without conversion.
+# Identity-bearing configuration aggregates
+# These extend the engine contract types with the database identity fields
+# (id, effective_from) required by the service layer to assemble
+# ConfigVersionRefs for snapshot persistence.
+#
+# DOMAIN_MODEL_ARCHITECTURE.md §10.1–10.3 — authoritative field definitions.
+# APPLICATION_SERVICE_ARCHITECTURE.md §9.1 STEP 5 — requires sdlt_config.id.
 # ---------------------------------------------------------------------------
 
-SDLTConfiguration = SDLTConfig
-CorporationTaxConfiguration = CorporationTaxConfig
-AssumptionConfiguration = AssumptionConfig
+
+@dataclass(frozen=True)
+class SDLTConfiguration(SDLTConfig):
+    """SDLTConfig extended with database identity for service-layer use."""
+
+    id: uuid.UUID = uuid.UUID(int=0)          # overridden by repository
+    effective_from: date = date(2000, 1, 1)   # overridden by repository
+
+
+@dataclass(frozen=True)
+class CorporationTaxConfiguration(CorporationTaxConfig):
+    """CorporationTaxConfig extended with database identity."""
+
+    id: uuid.UUID = uuid.UUID(int=0)
+    effective_from: date = date(2000, 1, 1)
+
+
+@dataclass(frozen=True)
+class AssumptionConfiguration(AssumptionConfig):
+    """AssumptionConfig extended with database identity."""
+
+    id: uuid.UUID = uuid.UUID(int=0)
+    effective_from: date = date(2000, 1, 1)
 
 
 # ---------------------------------------------------------------------------

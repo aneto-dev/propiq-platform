@@ -26,12 +26,7 @@ from app.db.models.configuration import (
     ConfigSdltVersion,
 )
 from app.domain.errors import ConfigurationNotFoundError, PersistenceIntegrityError
-from app.engine.contracts import (
-    AssumptionConfig,
-    CorporationTaxConfig,
-    SDLTBand,
-    SDLTConfig,
-)
+from app.engine.contracts import SDLTBand
 from app.repositories.interfaces.i_configuration import (
     AssumptionConfigSummary,
     AssumptionConfiguration,
@@ -62,7 +57,7 @@ class ConfigurationRepository:
 
     async def find_active_sdlt_config(
         self, as_of_date: date
-    ) -> SDLTConfig:
+    ) -> SDLTConfiguration:
         """
         Return the most recent SDLT config with effective_from <= as_of_date.
         Loads all band records in a second query (Part 8.2).
@@ -82,7 +77,7 @@ class ConfigurationRepository:
 
     async def find_active_corporation_tax_config(
         self, as_of_date: date
-    ) -> CorporationTaxConfig:
+    ) -> CorporationTaxConfiguration:
         """
         Return the most recent CT config with effective_from <= as_of_date.
         Raises ConfigurationNotFoundError if none found.
@@ -101,7 +96,7 @@ class ConfigurationRepository:
 
     async def find_active_assumption_config(
         self, as_of_date: date
-    ) -> AssumptionConfig:
+    ) -> AssumptionConfiguration:
         """
         Return the most recent assumption config with effective_from <= as_of_date.
         Raises ConfigurationNotFoundError if none found.
@@ -124,7 +119,7 @@ class ConfigurationRepository:
 
     async def find_sdlt_config_by_id(
         self, version_id: uuid.UUID
-    ) -> SDLTConfig:
+    ) -> SDLTConfiguration:
         """
         Load the exact SDLT config version referenced by a snapshot.
         Raises ConfigurationNotFoundError if id does not exist.
@@ -142,7 +137,7 @@ class ConfigurationRepository:
 
     async def find_corporation_tax_config_by_id(
         self, version_id: uuid.UUID
-    ) -> CorporationTaxConfig:
+    ) -> CorporationTaxConfiguration:
         """
         Load the exact CT config version referenced by a snapshot.
         Raises ConfigurationNotFoundError if id does not exist.
@@ -160,7 +155,7 @@ class ConfigurationRepository:
 
     async def find_assumption_config_by_id(
         self, version_id: uuid.UUID
-    ) -> AssumptionConfig:
+    ) -> AssumptionConfiguration:
         """
         Load the exact assumption config version referenced by a snapshot.
         Raises ConfigurationNotFoundError if id does not exist.
@@ -317,7 +312,7 @@ class ConfigurationRepository:
 
     async def _load_sdlt_with_bands(
         self, version: ConfigSdltVersion
-    ) -> SDLTConfig:
+    ) -> SDLTConfiguration:
         """
         Load SDLT bands for the given version and assemble the domain object.
         Raises PersistenceIntegrityError if no bands found (data integrity failure).
@@ -341,15 +336,15 @@ class ConfigurationRepository:
         self,
         version: ConfigSdltVersion,
         bands: list[ConfigSdltBand],
-    ) -> SDLTConfig:
+    ) -> SDLTConfiguration:
         """
         Convert ConfigSdltVersion ORM row + [ConfigSdltBand] rows
-        → SDLTConfig domain type.
+        → SDLTConfiguration domain type (includes id and effective_from).
 
         Architecture: REPOSITORY_ARCHITECTURE.md Part 4.1 (_to_domain mapping).
-        IMPLEMENTATION_ROADMAP.md Commit 4.3 — _to_sdlt_domain() spec.
+        DOMAIN_MODEL_ARCHITECTURE.md §10.1 — SDLTConfiguration aggregate root.
         """
-        return SDLTConfig(
+        return SDLTConfiguration(
             bands=tuple(
                 SDLTBand(
                     band_lower=Decimal(str(band.band_lower)),
@@ -363,13 +358,15 @@ class ConfigurationRepository:
             additional_dwelling_surcharge_rate=Decimal(
                 str(version.additional_dwelling_surcharge_rate)
             ),
+            id=uuid.UUID(str(version.id)),
+            effective_from=version.effective_from,
         )
 
     def _to_ct_domain(
         self, row: ConfigCorporationTaxVersion
-    ) -> CorporationTaxConfig:
-        """Convert ConfigCorporationTaxVersion ORM row → CorporationTaxConfig."""
-        return CorporationTaxConfig(
+    ) -> CorporationTaxConfiguration:
+        """Convert ConfigCorporationTaxVersion ORM row → CorporationTaxConfiguration."""
+        return CorporationTaxConfiguration(
             small_profits_rate=Decimal(str(row.small_profits_rate)),
             small_profits_upper_threshold=Decimal(
                 str(row.small_profits_upper_threshold)
@@ -378,13 +375,15 @@ class ConfigurationRepository:
             main_rate_lower_threshold=Decimal(str(row.main_rate_lower_threshold)),
             marginal_relief_numerator=int(row.marginal_relief_numerator),
             marginal_relief_denominator=int(row.marginal_relief_denominator),
+            id=uuid.UUID(str(row.id)),
+            effective_from=row.effective_from,
         )
 
     def _to_assumption_domain(
         self, row: ConfigAssumptionVersion
-    ) -> AssumptionConfig:
-        """Convert ConfigAssumptionVersion ORM row → AssumptionConfig."""
-        return AssumptionConfig(
+    ) -> AssumptionConfiguration:
+        """Convert ConfigAssumptionVersion ORM row → AssumptionConfiguration."""
+        return AssumptionConfiguration(
             void_rate_percent_default=Decimal(str(row.void_rate_percent_default)),
             letting_agent_fee_percent_default=Decimal(
                 str(row.letting_agent_fee_percent_default)
@@ -414,4 +413,6 @@ class ConfigurationRepository:
             icr_threshold_higher_rate_percent=Decimal(
                 str(row.icr_threshold_higher_rate_percent)
             ),
+            id=uuid.UUID(str(row.id)),
+            effective_from=row.effective_from,
         )
