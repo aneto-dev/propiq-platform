@@ -195,7 +195,8 @@ class TestAllTablesExist:
         """No extra or missing tables — exactly the 16 Phase 1 tables."""
         rows = await _query(
             "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema = 'public' AND table_type = 'BASE TABLE'"
+            "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' "
+            "AND table_name NOT IN ('alembic_version', 'spatial_ref_sys')"
         )
         actual = {row[0] for row in rows}
         expected = set(EXPECTED_TABLES)

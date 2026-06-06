@@ -14,17 +14,18 @@ exists), then op.create_foreign_key adds the deferred FK.
 Downgrade: intentional no-op per PERSISTENCE_ARCHITECTURE.md Part 14.2.
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "1d56deba40c1"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -1349,6 +1350,7 @@ def upgrade() -> None:
             ondelete="RESTRICT",
         ),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("sdlt_version_id", "band_order", name="uq_sdlt_bands_version_order"),
     )
 
 

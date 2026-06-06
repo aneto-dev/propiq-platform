@@ -31,25 +31,24 @@ Architecture:
 from __future__ import annotations
 
 import asyncio
-import sys
-import uuid
-from datetime import UTC, datetime, date
-from decimal import Decimal
-
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
 
 # ---------------------------------------------------------------------------
 # Path bootstrap: allow running from backend/ or from repo root.
 # ---------------------------------------------------------------------------
 import os
+import sys
+import uuid
+from datetime import UTC, date, datetime
+from decimal import Decimal
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
 from app.core.config import get_settings  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # Seed values — DATABASE_SCHEMA_DESIGN.md Section 9

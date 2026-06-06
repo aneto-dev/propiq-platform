@@ -1152,3 +1152,113 @@ Both targeted the same test database. Alembic uses `CREATE TYPE foo AS ENUM (...
 - No `UndefinedTableError`
 
 **Note:** The `0002_database_roles.py` migration (propiq_app / propiq_admin role grants) was also deleted. Database role privileges are a deployment concern and should be re-added as a separate migration in Phase 8 when the Railway deployment is configured. For local development and integration testing, the default superuser role is used.
+
+---
+
+## Commit 3.4 Verification — clean-migration-baseline branch
+
+**Date:** 2026-06-06
+**Target database:** `propiq_test` (Docker, `propiq_postgres_test`, localhost:5433)
+**DATABASE_URL used:** `postgresql+asyncpg://propiq:propiq@localhost:5433/propiq_test`
+
+### Fixes applied during verification
+
+Two bugs were discovered and corrected as part of this verification pass:
+
+#### Fix 1 — Missing UNIQUE constraint on `config_sdlt_bands(sdlt_version_id, band_order)`
+
+**Root cause:** The initial migration created `config_sdlt_bands` with only a PRIMARY KEY on `id`. The seed script uses `ON CONFLICT (sdlt_version_id, band_order) DO NOTHING` for idempotency, which requires a UNIQUE constraint on that column pair. The constraint was documented in `DATABASE_SCHEMA_DESIGN.md` (and noted in the BUILD_LOG Commit 3.2 entry) but was omitted from the generated migration.
+
+**Fix:** Added `sa.UniqueConstraint("sdlt_version_id", "band_order", name="uq_sdlt_bands_version_order")` to the `config_sdlt_bands` table definition in the initial migration. The test database was dropped and recreated from scratch to confirm the corrected migration applies cleanly.
+
+**File modified:** `backend/alembic/versions/20260606_0026_1d56deba40c1_initial_schema_from_models.py`
+
+#### Fix 2 — Schema integrity test queried infrastructure tables
+
+**Root cause:** `test_exactly_expected_tables` fetched all `BASE TABLE` rows from the `public` schema without exclusions. `alembic_version` and `spatial_ref_sys` (PostGIS) are both `BASE TABLE` type and are always present, causing the assertion to fail.
+
+**Fix:** Added `AND table_name NOT IN ('alembic_version', 'spatial_ref_sys')` to the query. The test intent is "exactly the 16 Phase 1 application tables exist" — infrastructure tables are outside that scope.
+
+**File modified:** `backend/tests/integration/test_schema_integrity.py`
+
+#### Fix 3 — ruff auto-fix (import ordering and modern type syntax)
+
+**Root cause:** `ruff check .` reported 9 fixable violations: `I001` import ordering in `alembic/env.py`, the initial migration, and `scripts/seed_configuration.py`; `UP035`/`UP007` outdated `typing` imports in the migration.
+
+**Fix:** `poetry run ruff check . --fix` resolved all 9 automatically.
+
+**Files modified:** `alembic/versions/20260606_0026_1d56deba40c1_initial_schema_from_models.py`, `scripts/seed_configuration.py`
+
+---
+
+### Verification results
+
+| Step | Command | Result |
+|---|---|---|
+| Migration | `alembic upgrade head` (after schema drop) | ✅ Ran `1d56deba40c1` cleanly; 16 tables, 11 enums, PostGIS |
+| Table count | psql `SELECT tablename` | ✅ 16 application tables + `alembic_version` + `spatial_ref_sys` |
+| Unique constraint | `pg_constraint` query on `config_sdlt_bands` | ✅ `uq_sdlt_bands_version_order` UNIQUE (sdlt_version_id, band_order) |
+| Seed — first run | `poetry run python scripts/seed_configuration.py` | ✅ All 5 groups → INSERTED |
+| Seed — idempotency | `poetry run python scripts/seed_configuration.py` (re-run) | ✅ All 5 groups → already present |
+| Ruff | `poetry run ruff check .` | ✅ All checks passed |
+| Unit tests | `poetry run pytest tests/unit -v` | ✅ 427 passed |
+| Schema integrity | `poetry run pytest tests/integration/test_schema_integrity.py -v` | ✅ 120 passed |
+| Full pytest | `poetry run pytest` | ⚠️ 714 passed, 98 errors (see below) |
+
+### Actual seed output (first run)
+
+```
+PropIQ — Configuration seed script
+Database: localhost:5433/propiq_test
+
+  config_engine_versions  v1.0.0  → INSERTED
+  config_sdlt_versions    ENGLAND 2025-04-01  → INSERTED
+  config_sdlt_bands       5/5 bands  → INSERTED
+  config_corporation_tax  effective 2023-04-01  → INSERTED
+  config_assumption       effective 2025-01-01  → INSERTED
+
+Seed complete.
+```
+
+### Actual seed output (idempotency re-run)
+
+```
+PropIQ — Configuration seed script
+Database: localhost:5433/propiq_test
+
+  config_engine_versions  v1.0.0  → already present
+  config_sdlt_versions    ENGLAND 2025-04-01  → already present
+  config_sdlt_bands       5/5 bands  → already present
+  config_corporation_tax  effective 2023-04-01  → already present
+  config_assumption       effective 2025-01-01  → already present
+
+Seed complete.
+```
+
+### Full pytest — 98 errors explained (out of scope for Commit 3.4)
+
+**All 98 errors come from exactly these 9 test files:**
+
+```
+tests/integration/repositories/test_audit_repository.py
+tests/integration/repositories/test_configuration_repository.py
+tests/integration/repositories/test_deal_repository.py
+tests/integration/repositories/test_investor_profile_repository.py
+tests/integration/repositories/test_property_repository.py
+tests/integration/repositories/test_snapshot_repository.py
+tests/integration/repositories/test_user_repository.py
+tests/integration/snapshots/test_snapshot_comparison.py
+tests/integration/snapshots/test_snapshot_completeness.py
+```
+
+**Root cause:** Every error is `fixture 'async_session' not found`. The `async_session` fixture provides a live `AsyncSession` connected to the test database. It is referenced in `tests/integration/repositories/conftest.py` by a comment stating it is "intentionally defined once at the integration-test root" — but `tests/integration/conftest.py` does not yet exist.
+
+**Roadmap reference:** `IMPLEMENTATION_ROADMAP.md § Commit 4.3 — Configuration repository` lists `backend/tests/integration/repositories/conftest.py` as a file to be created in that commit, with `async_session` and database engine setup as its primary responsibility. Commit 4.3 has `Dependencies: Commits 3.4, 4.1` — meaning it depends on this commit, not the other way around.
+
+**Why out of scope for Commit 3.4:** Commit 3.4 scope is limited to the configuration seed script and its direct verification (migration, seed, idempotency, schema integrity). The `async_session` fixture is Phase 4 infrastructure that belongs to the repository layer. Implementing it here would pull Commit 4.3 work onto this branch and blur the commit boundary.
+
+**The 714 passing tests include:** all 427 unit tests, all 12 regression scenario suites (~130 tests), all 11 determinism tests, all 120 schema integrity tests, and all 8 snapshot immutability structure tests (which do not require `async_session`).
+
+### Commit 3.4 scope verdict
+
+Commit 3.4 is complete. All in-scope verification steps pass. The `async_session` failures are a known dependency on Commit 4.3 which has not yet been implemented on this branch.
