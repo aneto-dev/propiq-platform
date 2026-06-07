@@ -161,40 +161,89 @@ the platform provides — not from restricting access to user-owned records.
 
 ---
 
-## Phase 3 — Depth (first reason to prefer PropIQ over alternatives)
+## Phase 3 — Depth and Intelligence (first reason to prefer PropIQ over alternatives)
 
 ### Goal
 
 Add capabilities that competitors cannot easily replicate and that serve the
 analytical investor's deeper needs.
 
+This phase expands PropIQ beyond pure underwriting by introducing
+explainability, intelligence, and monitoring capabilities while preserving
+the deterministic trust model established in Phase 1.
+
 ### Features
 
-**Underwriting depth**
+#### Underwriting Depth
 
-- HMO analysis (per-room income modelling)
-- BRRR scenario modelling (purchase → refurb → refinance → hold)
-- Sensitivity analysis (what if rate rises 1%? what if void doubles?)
-- Scenario comparison (saved side-by-side)
+* HMO analysis (per-room income modelling)
+* BRRR scenario modelling (purchase → refurb → refinance → hold)
+* Sensitivity analysis (what if rate rises 1%? what if void doubles?)
+* Scenario comparison (saved side-by-side)
 
-**Explainability layer**
+#### Explainability Layer
 
-- Step-by-step calculation breakdown (why did this number come from?)
-- Assumption impact analysis (which input affects the result most?)
-- Section 24 visual explainer
-- PDF export (lender-ready, accountant-ready)
+* Step-by-step calculation breakdown (why did this number come from?)
+* Assumption impact analysis (which input affects the result most?)
+* Section 24 visual explainer
+* PDF export (lender-ready, accountant-ready)
 
-**Area intelligence (first pass)**
+#### Area Intelligence
 
-- Flood risk warning (Environment Agency — free API)
-- EPC rating lookup
-- Article 4 direction warnings by postcode
+* Flood risk warning
+* EPC rating lookup
+* Article 4 direction warnings
+* Planning constraints
+* Conservation area indicators
+
+#### Listing Intelligence
+
+* Property URL import
+* Listing monitoring
+* Listing first seen tracking
+* Price change alerts
+* Sold STC alerts
+* Under offer alerts
+* Listing removal alerts
+* Listing reactivation alerts
+* Floorplan capture
+* Floorplan storage
+* Listing timeline history
+
+#### Intelligence Foundation
+
+* Intelligence Architecture introduced
+* Property Intelligence
+* Area Intelligence
+* Planning Intelligence
+* Listing Intelligence
+* Intelligence event processing
+* External data refresh workflows
+
+### Architectural Rules
+
+The intelligence layer:
+
+* provides context
+* provides monitoring
+* provides enrichment
+* provides awareness
+
+The intelligence layer does not:
+
+* modify underwriting outputs
+* modify historical snapshots
+* override deterministic calculations
+* become a dependency of the underwriting engine
 
 ### Phase 3 Exit Criteria
 
-- HMO investors use PropIQ for all deal analysis
-- Investors share PDF reports with brokers and accountants
-- Sensitivity analysis is used to model rate rise scenarios
+* HMO investors use PropIQ for all deal analysis
+* Investors share PDF reports with brokers and accountants
+* Sensitivity analysis is used to model rate rise scenarios
+* Investors receive listing status updates on tracked opportunities
+* Property monitoring becomes a recurring engagement mechanism
+* Intelligence services operate independently of underwriting calculations
 
 ---
 
@@ -206,19 +255,24 @@ Become the operational intelligence layer for investors with 5+ properties.
 
 ### Features
 
-- Portfolio-level cash flow analysis
-- Debt maturity calendar (all mortgage expiries in one view)
-- Refinance pipeline tracking
-- Debt exposure and concentration risk
-- Portfolio stress testing (what happens to the portfolio if rates rise 2%?)
-- Equity tracking across portfolio
-- Capital recycling modelling (BRRR portfolio view)
+* Portfolio-level cash flow analysis
+* Debt maturity calendar (all mortgage expiries in one view)
+* Refinance pipeline tracking
+* Debt exposure and concentration risk
+* Portfolio stress testing
+* Equity tracking across portfolio
+* Capital recycling modelling (BRRR portfolio view)
+* Portfolio performance dashboards
+* Portfolio variance analysis
+* Multi-property reporting
 
 ### Phase 4 Exit Criteria
 
-- Investors with 10+ properties rely on PropIQ for portfolio oversight
-- Refinance decisions are modelled in PropIQ before engaging a broker
-- Churn at month 12 is materially lower than month 6
+* Investors with 10+ properties rely on PropIQ for portfolio oversight
+* Refinance decisions are modelled in PropIQ before engaging a broker
+* Churn at month 12 is materially lower than month 6
+* Portfolio reporting becomes part of the investor's monthly workflow
+
 
 ---
 

@@ -51,6 +51,12 @@ Examples:
 * EPCDataUpdated
 * PlanningDataUpdated
 * FloodRiskUpdated
+* ListingPriceChanged
+* ListingRemoved
+* ListingStatusChanged
+* FloorplanDiscovered
+* ListingReactivated
+* ListingFirstSeen
 
 ---
 

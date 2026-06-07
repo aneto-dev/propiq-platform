@@ -302,3 +302,26 @@ The platform builds long-term value through:
   in re-establishing those workflows, not from any restriction on data access.
 - **Professional network** — team access, advisor sharing, and professional
   tooling create organisational value that extends beyond any individual user.
+
+## Listing Monitoring and Deal Tracking
+
+Future platform versions may support monitoring of third-party property listings.
+
+Examples:
+
+- Price reductions
+- Sold STC status changes
+- Under offer status changes
+- Listing removals
+- New photos
+- New floorplans
+
+The purpose is not to become a property portal.
+
+The purpose is to help investors track properties already under consideration.
+
+Users continue to discover properties through existing portals.
+PropIQ becomes the system that tracks and analyses them.
+
+Listing monitoring is a retention feature and operational workflow capability.
+It does not participate in authoritative financial calculations.
