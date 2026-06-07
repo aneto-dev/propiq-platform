@@ -44,10 +44,15 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 from app.domain.entities.user import User
+from app.repositories.configuration_repository import ConfigurationRepository
 from app.repositories.deal_repository import DealRepository
 from app.repositories.investor_profile_repository import InvestorProfileRepository
 from app.repositories.property_repository import PropertyRepository
 from app.repositories.user_repository import UserRepository
+from app.services.calculation_service import (
+    CalculationService,
+    make_calculation_service,
+)
 from app.services.deal_service import DealService
 from app.services.property_service import PropertyService
 from app.services.user_service import UserService
@@ -117,6 +122,15 @@ def get_deal_service(db: AsyncSession = Depends(get_db)) -> DealService:
         deal_repo=DealRepository(db),
         property_repo=PropertyRepository(db),
         profile_repo=InvestorProfileRepository(db),
+    )
+
+
+def get_calculation_service(db: AsyncSession = Depends(get_db)) -> CalculationService:
+    """Construct a CalculationService bound to the request session."""
+    return make_calculation_service(
+        session=db,
+        session_factory=_get_session_factory(),
+        config_repo=ConfigurationRepository(db),
     )
 
 

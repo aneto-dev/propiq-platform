@@ -216,6 +216,54 @@ class SnapshotService:
         await self._snapshot_repo.mark_superseded(snapshot_id, superseded_at)
         await self._session.commit()
 
+    # ------------------------------------------------------------------
+    # Read — inputs only (for reproduction)
+    # APPLICATION_SERVICE_ARCHITECTURE.md §5.4
+    # ------------------------------------------------------------------
+
+    async def get_snapshot_inputs_only(
+        self,
+        snapshot_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> CalculationSnapshot:
+        """
+        Load the full snapshot (including inputs and config_version_refs) with
+        ownership verification. Used by reproduce_original to reconstruct the
+        exact engine input from a historical snapshot.
+
+        Raises NotFoundError if snapshot not found or deal not owned by user.
+
+        Architecture: APPLICATION_SERVICE_ARCHITECTURE.md §5.4 STEP 1.
+        """
+        return await self.get_full_snapshot(snapshot_id, user_id)
+
+    # ------------------------------------------------------------------
+    # Write — reproduction snapshot (no deal pointer update)
+    # APPLICATION_SERVICE_ARCHITECTURE.md §5.4
+    # ------------------------------------------------------------------
+
+    async def save_reproduction_snapshot(
+        self,
+        snapshot: CalculationSnapshot,
+        audit_event: CalculationAuditEvent,
+    ) -> None:
+        """
+        Persist a reproduction snapshot without updating deals.latest_snapshot_id.
+
+        The original snapshot remains the "current" analysis; this reproduction
+        is saved for audit and reproducibility verification only.
+
+        Steps:
+          1. snapshot_repo.save_without_deal_pointer_update(snapshot) — 6 sub-table INSERTs
+          2. audit_repo.save(audit_event) — SUCCESS audit INSERT
+          3. session.commit()
+
+        Architecture: APPLICATION_SERVICE_ARCHITECTURE.md §5.4, SI-06.
+        """
+        await self._snapshot_repo.save_without_deal_pointer_update(snapshot)
+        await self._audit_repo.save(audit_event)
+        await self._session.commit()
+
 
 # ---------------------------------------------------------------------------
 # Factory helper — construct SnapshotService with concrete implementations

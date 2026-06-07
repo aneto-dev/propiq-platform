@@ -79,6 +79,20 @@ class CalculationSuccessResponse(BaseModel):
     snapshot: SnapshotSummaryResponse
 
 
+class RecalculateRequest(BaseModel):
+    """Request body for POST /api/v1/calculations/recalculate."""
+
+    deal_id: uuid.UUID
+    calculation_date: date | None = None
+
+
+class ReproduceOriginalRequest(BaseModel):
+    """Request body for POST /api/v1/calculations/reproduce-original."""
+
+    source_snapshot_id: uuid.UUID
+    calculation_date: date | None = None
+
+
 class CalculationValidationFailureResponse(BaseModel):
     """
     Response for a calculation that fails engine validation.

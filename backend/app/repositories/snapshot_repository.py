@@ -163,6 +163,60 @@ class SnapshotRepository:
             .values(latest_snapshot_id=snapshot.id)
         )
 
+    async def save_without_deal_pointer_update(
+        self, snapshot: CalculationSnapshot
+    ) -> None:
+        """
+        Persist snapshot sub-tables (1–6) without updating deals.latest_snapshot_id.
+
+        Used for reproduction snapshots — the original snapshot remains the
+        "current" analysis and the deal pointer is not moved.
+
+        Architecture: APPLICATION_SERVICE_ARCHITECTURE.md §5.4.
+        """
+        refs = snapshot.config_version_refs
+
+        self._session.add(
+            SnapshotCalculation(
+                id=snapshot.id,
+                deal_id=snapshot.deal_id,
+                user_id=snapshot.user_id,
+                engine_version=snapshot.engine_version,
+                assumption_config_version_id=refs.assumption_config_version_id,
+                sdlt_config_version_id=refs.sdlt_config_version_id,
+                corporation_tax_config_version_id=refs.corporation_tax_config_version_id,
+                calculated_at=snapshot.calculated_at,
+                is_superseded=snapshot.is_superseded,
+                superseded_at=snapshot.superseded_at,
+                calculation_duration_ms=snapshot.calculation_duration_ms,
+            )
+        )
+        self._session.add(self._build_inputs_row(snapshot.id, snapshot.inputs))
+        self._session.add(self._build_outputs_row(snapshot.id, snapshot.outputs))
+        self._session.add(
+            self._build_intermediates_row(snapshot.id, snapshot.intermediates)
+        )
+        for flag in snapshot.risk_flags:
+            self._session.add(
+                SnapshotRiskFlag(
+                    snapshot_id=snapshot.id,
+                    flag_code=flag.code,
+                    severity=flag.severity,
+                    triggered_by_field=flag.triggered_by_field,
+                    triggered_by_value=flag.triggered_by_value,
+                    message=flag.message,
+                )
+            )
+        for warning in snapshot.validation_warnings:
+            self._session.add(
+                SnapshotValidationWarning(
+                    snapshot_id=snapshot.id,
+                    rule_code=warning.rule_code,
+                    field=warning.field,
+                    message=warning.message,
+                )
+            )
+
     async def mark_superseded(
         self, snapshot_id: uuid.UUID, superseded_at: datetime
     ) -> None:

@@ -68,6 +68,8 @@ from app.engine.version import ENGINE_VERSION
 from app.repositories.deal_repository import DealRepository
 from app.repositories.interfaces.i_audit import CalculationAuditEvent
 from app.repositories.interfaces.i_deal import IDealRepository
+from app.repositories.interfaces.i_property import IPropertyRepository
+from app.repositories.property_repository import PropertyRepository
 from app.services.audit_service import AuditService
 from app.services.configuration_service import (
     ConfigurationService,
@@ -335,6 +337,66 @@ def build_snapshot_from_engine_result(
     )
 
 
+def reconstruct_engine_input_from_snapshot(
+    inputs: SnapshotInputs,
+) -> tuple[EngineInput, InputSourceMap]:
+    """
+    Rebuild EngineInput and InputSourceMap from a SnapshotInputs record.
+
+    Converts Money/Rate domain value objects back to plain Decimal values for
+    the engine. The input_sources are recovered from the _source fields stored
+    on SnapshotInputs, preserving the original USER_OVERRIDE / CONFIG_DEFAULT
+    provenance.
+
+    Used by reproduce_original to re-run the engine with exactly the same
+    inputs and configuration as a historical snapshot.
+
+    Architecture: APPLICATION_SERVICE_ARCHITECTURE.md §5.4 STEP 3.
+    """
+
+    i: SnapshotInputs = inputs  # type narrowing
+
+    engine_input = EngineInput(
+        purchase_price=i.purchase_price.amount,
+        monthly_rent=i.monthly_rent.amount,
+        deposit_amount=i.deposit_amount.amount,
+        mortgage_interest_rate=i.mortgage_interest_rate.value,
+        mortgage_term_years=i.mortgage_term_years,
+        mortgage_type=i.mortgage_type,
+        ownership_structure=i.ownership_structure,
+        income_tax_band=i.income_tax_band,
+        is_additional_dwelling=i.is_additional_dwelling,
+        property_type=i.property_type,
+        tenure=i.tenure,
+        property_country=i.property_country,
+        postcode=i.postcode,
+        lease_years_remaining=i.lease_years_remaining,
+        void_rate_percent=i.void_rate_percent.value,
+        letting_agent_fee_percent=i.letting_agent_fee_percent.value,
+        maintenance_reserve_percent=i.maintenance_reserve_percent.value,
+        landlord_insurance_annual=i.landlord_insurance_annual.amount,
+        purchase_legal_costs=i.purchase_legal_costs.amount,
+        refurbishment_cost=i.refurbishment_cost.amount,
+        annual_service_charge=i.annual_service_charge.amount,
+        annual_ground_rent=i.annual_ground_rent.amount,
+        annual_accountancy_cost=i.annual_accountancy_cost.amount,
+    )
+
+    input_sources = InputSourceMap(
+        void_rate_percent_source=i.void_rate_percent_source,
+        letting_agent_fee_percent_source=i.letting_agent_fee_percent_source,
+        maintenance_reserve_percent_source=i.maintenance_reserve_percent_source,
+        landlord_insurance_annual_source=i.landlord_insurance_annual_source,
+        purchase_legal_costs_source=i.purchase_legal_costs_source,
+        refurbishment_cost_source=i.refurbishment_cost_source,
+        annual_service_charge_source=i.annual_service_charge_source,
+        annual_ground_rent_source=i.annual_ground_rent_source,
+        annual_accountancy_cost_source=i.annual_accountancy_cost_source,
+    )
+
+    return engine_input, input_sources
+
+
 # ---------------------------------------------------------------------------
 # CalculationService
 # ---------------------------------------------------------------------------
@@ -361,12 +423,14 @@ class CalculationService:
         config_service: ConfigurationService,
         snapshot_service: SnapshotService,
         audit_service: AuditService,
+        property_repo: IPropertyRepository | None = None,
     ) -> None:
         self._session = session
         self._deal_repo = deal_repo
         self._config_service = config_service
         self._snapshot_service = snapshot_service
         self._audit_service = audit_service
+        self._property_repo = property_repo
 
     async def run_calculation(
         self,
@@ -515,6 +579,237 @@ class CalculationService:
             deal_status_after=DealStatus.ANALYSED,
         )
 
+    async def recalculate_with_current_assumptions(
+        self,
+        user_id: uuid.UUID,
+        deal_id: uuid.UUID,
+        calculation_date: date,
+        client_context: str | None = None,
+    ) -> CalculationResult:
+        """
+        Recalculate using the deal's current working inputs and latest active config.
+
+        Follows the identical pipeline to run_calculation except:
+          - raw_inputs are constructed from deal.working_inputs (not an API body)
+          - property fields (property_type, tenure, postcode, country) are loaded
+            from the parent property record
+          - On success, the previous snapshot is marked superseded
+
+        Raises DomainError if working_inputs are incomplete (any required field
+        is None), or if the deal is ARCHIVED.
+
+        Architecture: APPLICATION_SERVICE_ARCHITECTURE.md §5.3.
+        """
+        from app.domain.errors import DomainError as _DomainError
+
+        if self._property_repo is None:
+            raise _DomainError("property_repo is required for recalculate")
+
+        # STEP 1 — Ownership + archived check
+        deal = await self._deal_repo.find_by_id_for_user(deal_id, user_id)
+        if deal is None:
+            raise NotFoundError(entity="deal", id=deal_id)
+        if deal.status == DealStatus.ARCHIVED:
+            raise DomainError("Cannot recalculate on an archived deal")
+
+        # STEP 2 — Load property for static fields
+        prop = await self._property_repo.find_by_id_for_user(deal.property_id, user_id)
+        if prop is None:
+            raise NotFoundError(entity="property", id=deal.property_id)
+
+        # STEP 3 — Build RawCalculationInputs from working inputs
+        wi = deal.working_inputs
+        required = {
+            "purchase_price": wi.purchase_price,
+            "monthly_rent": wi.monthly_rent,
+            "deposit_amount": wi.deposit_amount,
+            "mortgage_interest_rate": wi.mortgage_interest_rate,
+            "mortgage_term_years": wi.mortgage_term_years,
+            "mortgage_type": wi.mortgage_type,
+            "ownership_structure": wi.ownership_structure,
+            "is_additional_dwelling": wi.is_additional_dwelling,
+        }
+        missing = [k for k, v in required.items() if v is None]
+        if missing:
+            raise DomainError(
+                f"Deal working inputs are incomplete for recalculation: "
+                f"{', '.join(missing)}"
+            )
+
+        raw_inputs = RawCalculationInputs(
+            purchase_price=wi.purchase_price,  # type: ignore[arg-type]
+            monthly_rent=wi.monthly_rent,  # type: ignore[arg-type]
+            deposit_amount=wi.deposit_amount,  # type: ignore[arg-type]
+            mortgage_interest_rate=wi.mortgage_interest_rate,  # type: ignore[arg-type]
+            mortgage_term_years=wi.mortgage_term_years,  # type: ignore[arg-type]
+            mortgage_type=wi.mortgage_type,  # type: ignore[arg-type]
+            ownership_structure=wi.ownership_structure,  # type: ignore[arg-type]
+            income_tax_band=wi.income_tax_band,
+            is_additional_dwelling=wi.is_additional_dwelling,  # type: ignore[arg-type]
+            property_type=prop.property_type,
+            tenure=prop.tenure,
+            property_country=prop.address.country,
+            postcode=prop.address.postcode,
+            lease_years_remaining=prop.lease_years_remaining,
+            void_rate_percent=wi.void_rate_percent,
+            letting_agent_fee_percent=wi.letting_agent_fee_percent,
+            maintenance_reserve_percent=wi.maintenance_reserve_percent,
+            landlord_insurance_annual=wi.landlord_insurance_annual,
+            purchase_legal_costs=wi.purchase_legal_costs,
+            refurbishment_cost=wi.refurbishment_cost,
+            annual_service_charge=wi.annual_service_charge,
+            annual_ground_rent=wi.annual_ground_rent,
+            annual_accountancy_cost=wi.annual_accountancy_cost,
+        )
+
+        previous_snapshot_id = deal.latest_snapshot_id
+
+        # STEP 4 — Run the standard pipeline
+        result = await self.run_calculation(
+            user_id=user_id,
+            deal_id=deal_id,
+            raw_inputs=raw_inputs,
+            calculation_date=calculation_date,
+            client_context=client_context,
+        )
+
+        # STEP 5 — On success, mark previous snapshot superseded
+        if isinstance(result, CalculationSuccess) and previous_snapshot_id is not None:
+            try:
+                from datetime import UTC
+                from datetime import datetime as _dt
+                await self._snapshot_service.mark_superseded(
+                    snapshot_id=previous_snapshot_id,
+                    superseded_at=_dt.now(UTC),
+                )
+            except Exception:
+                pass  # Supersession failure is tolerated per §5.3
+
+        return result
+
+    async def reproduce_original(
+        self,
+        user_id: uuid.UUID,
+        source_snapshot_id: uuid.UUID,
+        calculation_date: date,
+        client_context: str | None = None,
+    ) -> CalculationResult:
+        """
+        Re-run the engine with the exact inputs and configuration of a historical
+        snapshot for reproducibility verification.
+
+        The deal's latest_snapshot_id is NOT updated — the reproduction snapshot
+        is saved for audit purposes only (Variant B).
+
+        Architecture: APPLICATION_SERVICE_ARCHITECTURE.md §5.4.
+        """
+        now = datetime.now(UTC)
+
+        # STEP 1 — Load original snapshot (ownership check included)
+        original = await self._snapshot_service.get_snapshot_inputs_only(
+            source_snapshot_id, user_id
+        )
+
+        # STEP 2 — Load specific configuration versions from the original snapshot
+        config_bundle = await self._config_service.load_specific_versions(
+            original.config_version_refs
+        )
+
+        # STEP 3 — Reconstruct EngineInput from original snapshot inputs
+        engine_input, input_sources = reconstruct_engine_input_from_snapshot(
+            original.inputs
+        )
+
+        # STEP 4 — Run engine
+        engine_result = engine_run(engine_input, config_bundle.engine_config)
+
+        # STEP 5 — Route on engine result type (same paths as run_calculation)
+
+        if isinstance(engine_result, ValidationResult) and not engine_result.is_valid:
+            audit_event = CalculationAuditEvent(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                deal_id=original.deal_id,
+                snapshot_id=None,
+                triggered_at=now,
+                outcome=CalculationOutcome.VALIDATION_FAILURE,
+                engine_version=ENGINE_VERSION,
+                validation_errors=[
+                    {"rule_code": e.rule_code, "field": e.field, "message": e.message}
+                    for e in engine_result.hard_errors
+                ],
+                error_detail=None,
+                client_context=client_context,
+                created_at=now,
+            )
+            await self._audit_service.write_failure(audit_event)
+            return CalculationValidationFailure(
+                hard_errors=engine_result.hard_errors,
+                warnings=engine_result.warnings,
+            )
+
+        if isinstance(engine_result, EngineError):
+            audit_event = CalculationAuditEvent(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                deal_id=original.deal_id,
+                snapshot_id=None,
+                triggered_at=now,
+                outcome=CalculationOutcome.ENGINE_ERROR,
+                engine_version=ENGINE_VERSION,
+                validation_errors=None,
+                error_detail=engine_result.detail,
+                client_context=client_context,
+                created_at=now,
+            )
+            await self._audit_service.write_failure(audit_event)
+            return CalculationError(message="Calculation could not be completed.")
+
+        # STEP 6 — Save reproduction snapshot (no deal pointer update)
+        assert isinstance(engine_result, EngineResult)
+        snapshot_id = uuid.uuid4()
+
+        audit_event = CalculationAuditEvent(
+            id=uuid.uuid4(),
+            user_id=user_id,
+            deal_id=original.deal_id,
+            snapshot_id=snapshot_id,
+            triggered_at=now,
+            outcome=CalculationOutcome.SUCCESS,
+            engine_version=ENGINE_VERSION,
+            validation_errors=None,
+            error_detail=None,
+            client_context=client_context,
+            created_at=now,
+        )
+
+        snapshot = build_snapshot_from_engine_result(
+            snapshot_id=snapshot_id,
+            deal_id=original.deal_id,
+            user_id=user_id,
+            engine_result=engine_result,
+            engine_input=engine_input,
+            input_sources=input_sources,
+            config_version_refs=original.config_version_refs,
+            calculated_at=now,
+        )
+
+        await self._snapshot_service.save_reproduction_snapshot(snapshot, audit_event)
+
+        # STEP 7 — Load deal status (unchanged — we did not update the deal)
+        deal = await self._deal_repo.find_by_id_for_user(original.deal_id, user_id)
+        deal_status = deal.status if deal is not None else DealStatus.ANALYSED
+
+        snapshot_summary = await self._snapshot_service.get_display_summary(
+            snapshot_id, user_id
+        )
+
+        return CalculationSuccess(
+            snapshot_id=snapshot_id,
+            snapshot_summary=snapshot_summary,
+            deal_status_after=deal_status,
+        )
+
 
 # ---------------------------------------------------------------------------
 # Factory helper
@@ -542,4 +837,5 @@ def make_calculation_service(
         config_service=ConfigurationService(config_repo),  # type: ignore[arg-type]
         snapshot_service=make_snapshot_service(session),
         audit_service=AuditService(session_factory=session_factory),
+        property_repo=PropertyRepository(session),
     )

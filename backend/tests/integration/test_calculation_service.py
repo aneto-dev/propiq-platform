@@ -131,6 +131,7 @@ def _make_calculation_service(
         config_service=ConfigurationService(config_repo),
         snapshot_service=make_snapshot_service(session),
         audit_service=AuditService(session_factory=session_factory),
+        property_repo=PropertyRepository(session),
     )
 
 

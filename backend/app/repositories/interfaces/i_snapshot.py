@@ -114,6 +114,23 @@ class ISnapshotRepository(Protocol):
         """
         ...
 
+    async def save_without_deal_pointer_update(
+        self, snapshot: CalculationSnapshot
+    ) -> None:
+        """
+        Persist the snapshot aggregate rows WITHOUT updating deals.latest_snapshot_id.
+
+        Used for reproduction snapshots (Variant B — APPLICATION_SERVICE_ARCHITECTURE.md
+        §5.4): the original snapshot remains the "current" analysis; the reproduction
+        is saved for audit purposes only.
+
+        Writes the same six snapshot sub-tables as save() but omits the
+        UPDATE on the deals table.
+
+        Architecture: APPLICATION_SERVICE_ARCHITECTURE.md §5.4.
+        """
+        ...
+
     async def find_by_id(
         self, snapshot_id: uuid.UUID
     ) -> CalculationSnapshot | None:
