@@ -1,0 +1,7 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+
+[deploy]
+startCommand = "alembic upgrade head && python scripts/seed_configuration.py && uvicorn app.main:app"
+healthcheckPath = "/api/v1/health"
