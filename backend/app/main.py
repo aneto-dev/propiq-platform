@@ -18,6 +18,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.error_handlers import register_error_handlers
+from app.api.middleware import register_middleware
 from app.api.v1.router import v1_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
@@ -82,6 +83,11 @@ def create_app() -> FastAPI:
 
     # Register domain exception → HTTP status code mappings.
     register_error_handlers(app)
+
+    # Register correlation ID middleware and structured request logging.
+    # OBSERVABILITY_ARCHITECTURE.md Part 4 — correlation ID strategy.
+    # IMPLEMENTATION_ROADMAP.md Commit 6.6.
+    register_middleware(app)
 
     return app
 

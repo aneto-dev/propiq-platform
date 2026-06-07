@@ -54,6 +54,11 @@ def configure_logging() -> None:
     # Common processors applied in every environment.
     # Order matters: each processor receives the output of the previous one.
     shared_processors: list[Any] = [
+        # Merge per-request context variables (correlation_id, etc.) into every
+        # log entry. Must be first so that subsequent processors see the context.
+        # Set by CorrelationIdMiddleware via structlog.contextvars.bind_contextvars().
+        # OBSERVABILITY_ARCHITECTURE.md Part 4.2 — context propagation.
+        structlog.contextvars.merge_contextvars,
         # Add log level as a string ("info", "warning", etc.).
         structlog.stdlib.add_log_level,
         # Add ISO-8601 UTC timestamp.
