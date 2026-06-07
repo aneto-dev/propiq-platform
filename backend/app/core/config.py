@@ -12,6 +12,7 @@ stateless; all configuration is injected from the environment, never hardcoded.
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -67,6 +68,29 @@ class Settings(BaseSettings):
     # Application version — embedded in every log entry and API response.
     # OBSERVABILITY_ARCHITECTURE.md Part 3.1 base fields: "version".
     app_version: str = "1.0.0"
+
+    # ---- CORS -------------------------------------------------------
+    # Comma-separated list of allowed frontend origins.
+    # Example: https://propiq-staging.vercel.app,http://localhost:3000
+    # In development, CORSMiddleware falls back to ["*"] regardless of this value.
+    # In staging/production, only the origins listed here are permitted.
+    # IMPLEMENTATION_ROADMAP.md Commit 8.3.
+    allowed_origins: list[str] = []
+
+    @field_validator("allowed_origins", mode="before")
+    @classmethod
+    def parse_allowed_origins(cls, v: object) -> list[str]:
+        """
+        Accept either a comma-separated string or a list.
+
+        Railway sets env vars as strings; pydantic-settings passes the raw
+        string here before coercion. Split on commas and strip whitespace.
+        """
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        if isinstance(v, list):
+            return [str(item) for item in v]
+        return []
 
     @property
     def is_production(self) -> bool:

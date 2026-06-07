@@ -16,6 +16,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.error_handlers import register_error_handlers
 from app.api.middleware import register_middleware
@@ -88,6 +89,21 @@ def create_app() -> FastAPI:
     # OBSERVABILITY_ARCHITECTURE.md Part 4 — correlation ID strategy.
     # IMPLEMENTATION_ROADMAP.md Commit 6.6.
     register_middleware(app)
+
+    # Register CORS middleware.
+    # Must be added after register_middleware so it wraps the outermost layer
+    # (Starlette middleware is LIFO — last added = first executed).
+    # In development: allow all origins for local frontend work.
+    # In staging/production: restrict to ALLOWED_ORIGINS from environment.
+    # IMPLEMENTATION_ROADMAP.md Commit 8.3.
+    cors_origins = ["*"] if settings.is_development else settings.allowed_origins
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     return app
 
