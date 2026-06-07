@@ -17,6 +17,11 @@ export async function getProperties(): Promise<Property[]> {
   return apiRequest<Property[]>("/api/v1/properties/");
 }
 
+/** GET /api/v1/properties/{id}/ — fetch a single property by ID. */
+export async function getProperty(id: string): Promise<Property> {
+  return apiRequest<Property>(`/api/v1/properties/${id}/`);
+}
+
 /** POST /api/v1/properties/ — create a new property. */
 export async function createProperty(
   body: CreatePropertyRequest,
