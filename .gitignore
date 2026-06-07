@@ -31,3 +31,7 @@ node_modules/
 # macOS
 .DS_Store
 __MACOSX/
+
+# Claude Code
+.claude/
+frontend/.claude/
