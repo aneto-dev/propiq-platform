@@ -55,6 +55,7 @@ from app.services.calculation_service import (
 )
 from app.services.deal_service import DealService
 from app.services.property_service import PropertyService
+from app.services.snapshot_service import SnapshotService, make_snapshot_service
 from app.services.user_service import UserService
 
 # ---------------------------------------------------------------------------
@@ -123,6 +124,11 @@ def get_deal_service(db: AsyncSession = Depends(get_db)) -> DealService:
         property_repo=PropertyRepository(db),
         profile_repo=InvestorProfileRepository(db),
     )
+
+
+def get_snapshot_service(db: AsyncSession = Depends(get_db)) -> SnapshotService:
+    """Construct a SnapshotService bound to the request session."""
+    return make_snapshot_service(db)
 
 
 def get_calculation_service(db: AsyncSession = Depends(get_db)) -> CalculationService:
