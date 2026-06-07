@@ -1,0 +1,10 @@
+# Next.js build output
+.next/
+out/
+
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
+
+# Local environment files (production values committed in Commit 8.4)
+.env.local
+.env.*.local

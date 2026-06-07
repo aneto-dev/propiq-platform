@@ -1,0 +1,9 @@
+/*
+ * Tailwind CSS v4 entry point.
+ *
+ * @import "tailwindcss" replaces the v3 @tailwind directives.
+ * Theme customisation is applied below using @theme.
+ *
+ * Architecture: IMPLEMENTATION_ROADMAP.md Commit 7.1 — Tailwind v4 CSS-first setup.
+ */
+@import "tailwindcss";
