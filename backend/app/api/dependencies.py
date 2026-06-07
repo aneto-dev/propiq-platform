@@ -44,7 +44,12 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 from app.domain.entities.user import User
+from app.repositories.deal_repository import DealRepository
+from app.repositories.investor_profile_repository import InvestorProfileRepository
+from app.repositories.property_repository import PropertyRepository
 from app.repositories.user_repository import UserRepository
+from app.services.deal_service import DealService
+from app.services.property_service import PropertyService
 from app.services.user_service import UserService
 
 # ---------------------------------------------------------------------------
@@ -99,6 +104,20 @@ async def get_db() -> AsyncGenerator[AsyncSession]:
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     """Construct a UserService bound to the request session."""
     return UserService(UserRepository(db))
+
+
+def get_property_service(db: AsyncSession = Depends(get_db)) -> PropertyService:
+    """Construct a PropertyService bound to the request session."""
+    return PropertyService(PropertyRepository(db))
+
+
+def get_deal_service(db: AsyncSession = Depends(get_db)) -> DealService:
+    """Construct a DealService bound to the request session."""
+    return DealService(
+        deal_repo=DealRepository(db),
+        property_repo=PropertyRepository(db),
+        profile_repo=InvestorProfileRepository(db),
+    )
 
 
 # ---------------------------------------------------------------------------

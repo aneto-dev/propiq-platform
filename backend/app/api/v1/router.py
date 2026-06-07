@@ -10,7 +10,7 @@ API versioning from day one (ADR from SERVICE_ARCHITECTURE.md).
 
 from fastapi import APIRouter
 
-from app.api.v1.routes import health
+from app.api.v1.routes import deals, health, properties
 
 # The main v1 router. Mounted at /api/v1/ in main.py.
 v1_router = APIRouter()
@@ -18,8 +18,10 @@ v1_router = APIRouter()
 # Health — no auth, no prefix beyond /api/v1/
 v1_router.include_router(health.router)
 
+# Property and deal CRUD routes (Commit 6.3)
+v1_router.include_router(properties.router, prefix="/properties")
+v1_router.include_router(deals.router, prefix="/deals")
+
 # Future route modules are registered here as commits progress:
-# v1_router.include_router(properties.router, prefix="/properties")
-# v1_router.include_router(deals.router, prefix="/deals")
 # v1_router.include_router(calculations.router, prefix="/calculations")
 # v1_router.include_router(snapshots.router, prefix="/snapshots")
