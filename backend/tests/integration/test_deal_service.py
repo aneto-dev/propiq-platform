@@ -334,3 +334,118 @@ class TestDraftToAnalysedTransition:
         deal.apply_snapshot_created(second_snapshot_id)
         assert deal.status == DealStatus.ANALYSED
         assert deal.latest_snapshot_id == second_snapshot_id
+
+
+# ---------------------------------------------------------------------------
+# Tests: get_deal and list_deals
+# Bridge commit before Commit 6.3 — fills roadmap gap per SERVICE_ARCHITECTURE.md
+# ---------------------------------------------------------------------------
+
+
+class TestGetDeal:
+    """get_deal() returns an owned deal; raises NotFoundError otherwise."""
+
+    async def test_returns_owned_deal(
+        self, async_session: AsyncSession
+    ) -> None:
+        user_id = await _create_user(async_session)
+        property_id = await _create_property(async_session, user_id)
+
+        svc = _make_deal_service(async_session)
+        deal = await svc.create_deal(
+            user_id=user_id, property_id=property_id, label="Test"
+        )
+        await async_session.commit()
+
+        retrieved = await svc.get_deal(user_id, deal.id)
+        assert retrieved.id == deal.id
+        assert retrieved.user_id == user_id
+
+    async def test_raises_not_found_for_wrong_user(
+        self, async_session: AsyncSession
+    ) -> None:
+        owner_id = await _create_user(async_session)
+        attacker_id = await _create_user(async_session)
+        property_id = await _create_property(async_session, owner_id)
+
+        svc = _make_deal_service(async_session)
+        deal = await svc.create_deal(
+            user_id=owner_id, property_id=property_id, label="Test"
+        )
+        await async_session.commit()
+
+        with pytest.raises(NotFoundError) as exc_info:
+            await svc.get_deal(attacker_id, deal.id)
+        assert exc_info.value.entity == "deal"
+
+    async def test_raises_not_found_for_unknown_id(
+        self, async_session: AsyncSession
+    ) -> None:
+        user_id = await _create_user(async_session)
+        svc = _make_deal_service(async_session)
+
+        with pytest.raises(NotFoundError):
+            await svc.get_deal(user_id, uuid.uuid4())
+
+
+class TestListDeals:
+    """list_deals() returns paginated, user-scoped deal summaries."""
+
+    async def test_returns_owned_deals(
+        self, async_session: AsyncSession
+    ) -> None:
+        user_id = await _create_user(async_session)
+        property_id = await _create_property(async_session, user_id)
+
+        svc = _make_deal_service(async_session)
+        d1 = await svc.create_deal(
+            user_id=user_id, property_id=property_id, label="Deal A"
+        )
+        d2 = await svc.create_deal(
+            user_id=user_id, property_id=property_id, label="Deal B"
+        )
+        await async_session.commit()
+
+        page = await svc.list_deals(user_id)
+        ids = [s.id for s in page.items]
+        assert d1.id in ids
+        assert d2.id in ids
+
+    async def test_excludes_other_users_deals(
+        self, async_session: AsyncSession
+    ) -> None:
+        owner_id = await _create_user(async_session)
+        other_id = await _create_user(async_session)
+        property_id = await _create_property(async_session, owner_id)
+
+        svc = _make_deal_service(async_session)
+        await svc.create_deal(
+            user_id=owner_id, property_id=property_id, label="Owner Deal"
+        )
+        await async_session.commit()
+
+        page = await svc.list_deals(other_id)
+        assert page.items == []
+
+    async def test_status_filter_returns_only_matching_deals(
+        self, async_session: AsyncSession
+    ) -> None:
+        user_id = await _create_user(async_session)
+        property_id = await _create_property(async_session, user_id)
+
+        svc = _make_deal_service(async_session)
+        draft_deal = await svc.create_deal(
+            user_id=user_id, property_id=property_id, label="Draft"
+        )
+        archived_deal = await svc.create_deal(
+            user_id=user_id, property_id=property_id, label="To Archive"
+        )
+        await async_session.commit()
+
+        await svc.archive_deal(user_id=user_id, deal_id=archived_deal.id)
+        await async_session.commit()
+
+        draft_page = await svc.list_deals(user_id, status_filter=DealStatus.DRAFT)
+        draft_ids = [s.id for s in draft_page.items]
+        assert draft_deal.id in draft_ids
+        assert archived_deal.id not in draft_ids

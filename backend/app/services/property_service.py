@@ -24,12 +24,14 @@ Architecture:
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 
 from app.domain.entities.property import Property
 from app.domain.enums import PropertyType, Tenure
 from app.domain.errors import DomainError, NotFoundError
 from app.domain.value_objects.address import PropertyAddress
 from app.repositories.interfaces.i_property import IPropertyRepository
+from app.repositories.pagination import Page, PageRequest
 
 
 class PropertyService:
@@ -105,4 +107,87 @@ class PropertyService:
         prop = await self._property_repo.find_by_id_for_user(property_id, user_id)
         if prop is None:
             raise NotFoundError(entity="property", id=property_id)
+        return prop
+
+    async def list_properties(
+        self,
+        user_id: uuid.UUID,
+        include_archived: bool = False,
+        page: PageRequest | None = None,
+    ) -> Page[Property]:
+        """
+        Return a paginated list of properties owned by the given user.
+
+        include_archived=False (default) excludes archived properties.
+        The query is already scoped to user_id — no additional ownership
+        check is required.
+
+        Architecture: SERVICE_ARCHITECTURE.md — API layer calls services,
+        not repositories directly.
+        """
+        return await self._property_repo.find_all_for_user(
+            user_id,
+            include_archived=include_archived,
+            page=page or PageRequest(),
+        )
+
+    async def update_property(
+        self,
+        user_id: uuid.UUID,
+        property_id: uuid.UUID,
+        address: PropertyAddress | None = None,
+        property_type: PropertyType | None = None,
+        bedrooms: int | None = None,
+        epc_rating: str | None = None,
+    ) -> Property:
+        """
+        Apply mutable field updates to a user-owned property and persist.
+
+        Tenure is immutable after creation and cannot be changed via this
+        method (domain invariant — changing tenure would invalidate historical
+        snapshots that recorded it at calculation time).
+
+        Raises NotFoundError if the property does not exist or belongs to
+        a different user.
+
+        Architecture: SERVICE_ARCHITECTURE.md — API layer calls services.
+        DOMAIN_MODEL_ARCHITECTURE.md Part 16 — tenure immutability.
+        """
+        prop = await self._property_repo.find_by_id_for_user(property_id, user_id)
+        if prop is None:
+            raise NotFoundError(entity="property", id=property_id)
+
+        if address is not None:
+            prop.address = address
+        if property_type is not None:
+            prop.property_type = property_type
+        if bedrooms is not None:
+            prop.bedrooms = bedrooms
+        if epc_rating is not None:
+            prop.epc_rating = epc_rating
+
+        await self._property_repo.update(prop)
+        return prop
+
+    async def archive_property(
+        self,
+        user_id: uuid.UUID,
+        property_id: uuid.UUID,
+    ) -> Property:
+        """
+        Archive a property. Archived properties are excluded from list views
+        by default but remain accessible for historical snapshot reproduction.
+
+        Raises NotFoundError if the property does not exist or belongs to
+        a different user.
+
+        Architecture: SERVICE_ARCHITECTURE.md — API layer calls services.
+        """
+        prop = await self._property_repo.find_by_id_for_user(property_id, user_id)
+        if prop is None:
+            raise NotFoundError(entity="property", id=property_id)
+
+        prop.is_archived = True
+        prop.archived_at = datetime.now(UTC)
+        await self._property_repo.update(prop)
         return prop

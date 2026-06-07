@@ -36,9 +36,10 @@ from app.domain.enums import (
     OwnershipStructure,
 )
 from app.domain.errors import DomainError, NotFoundError
-from app.repositories.interfaces.i_deal import IDealRepository
+from app.repositories.interfaces.i_deal import DealSummary, IDealRepository
 from app.repositories.interfaces.i_investor_profile import IInvestorProfileRepository
 from app.repositories.interfaces.i_property import IPropertyRepository
+from app.repositories.pagination import Page, PageRequest
 
 # ---------------------------------------------------------------------------
 # DealInputUpdate — partial working input update
@@ -303,3 +304,47 @@ class DealService:
         # STEP 3 — Persist
         await self._deal_repo.update(deal)
         return deal
+
+    async def get_deal(
+        self,
+        user_id: uuid.UUID,
+        deal_id: uuid.UUID,
+    ) -> Deal:
+        """
+        Return a deal owned by the given user.
+
+        Raises NotFoundError if the deal does not exist or belongs to a
+        different user — both cases produce the same error per SI-13
+        (non-disclosure of existence).
+
+        Architecture: APPLICATION_SERVICE_ARCHITECTURE.md Part 10.1, SI-13.
+        SERVICE_ARCHITECTURE.md — API layer calls services, not repositories.
+        """
+        deal = await self._deal_repo.find_by_id_for_user(deal_id, user_id)
+        if deal is None:
+            raise NotFoundError(entity="deal", id=deal_id)
+        return deal
+
+    async def list_deals(
+        self,
+        user_id: uuid.UUID,
+        status_filter: DealStatus | None = None,
+        page: PageRequest | None = None,
+    ) -> Page[DealSummary]:
+        """
+        Return a paginated list of deal summaries for the given user.
+
+        status_filter=None returns all statuses. The query is already scoped
+        to user_id — no additional ownership check is required.
+
+        Returns DealSummary projections (not full Deal aggregates) including
+        the latest snapshot key metrics for list view display.
+
+        Architecture: SERVICE_ARCHITECTURE.md — API layer calls services.
+        REPOSITORY_ARCHITECTURE.md Part 5.2 — DealSummary projection.
+        """
+        return await self._deal_repo.find_all_for_user(
+            user_id,
+            status_filter=status_filter,
+            page=page or PageRequest(),
+        )

@@ -223,3 +223,164 @@ class TestOwnershipProtection:
         retrieved = await svc.get_property_for_user(prop.id, user_id)
         assert retrieved.id == prop.id
         assert retrieved.user_id == user_id
+
+
+# ---------------------------------------------------------------------------
+# Tests: list_properties, update_property, archive_property
+# Bridge commit before Commit 6.3 — fills roadmap gap per SERVICE_ARCHITECTURE.md
+# ---------------------------------------------------------------------------
+
+
+async def _create_freehold_property(
+    session: AsyncSession, user_id: uuid.UUID, label: str = "14 Acacia Road"
+) -> uuid.UUID:
+    svc = _make_service(session)
+    prop = await svc.create_property(
+        user_id=user_id,
+        address=PropertyAddress(
+            address_line_1=label,
+            city="Nottingham",
+            postcode="NG1 1AA",
+        ),
+        property_type=PropertyType.RESIDENTIAL_SINGLE_LET,
+        tenure=Tenure.FREEHOLD,
+        lease_years_remaining=None,
+        bedrooms=None,
+        epc_rating=None,
+    )
+    await session.commit()
+    return prop.id
+
+
+class TestListProperties:
+    """list_properties() returns paginated, user-scoped results."""
+
+    async def test_returns_owned_properties(
+        self, async_session: AsyncSession
+    ) -> None:
+        user_id = await _create_user(async_session)
+        await _create_freehold_property(async_session, user_id, "1 First St")
+        await _create_freehold_property(async_session, user_id, "2 Second St")
+
+        svc = _make_service(async_session)
+        page = await svc.list_properties(user_id)
+
+        ids = [p.id for p in page.items]
+        assert len(ids) == 2
+
+    async def test_excludes_other_users_properties(
+        self, async_session: AsyncSession
+    ) -> None:
+        owner_id = await _create_user(async_session)
+        other_id = await _create_user(async_session)
+        await _create_freehold_property(async_session, owner_id)
+
+        svc = _make_service(async_session)
+        page = await svc.list_properties(other_id)
+        assert page.items == []
+
+    async def test_excludes_archived_by_default(
+        self, async_session: AsyncSession
+    ) -> None:
+        user_id = await _create_user(async_session)
+        prop_id = await _create_freehold_property(async_session, user_id)
+
+        svc = _make_service(async_session)
+        await svc.archive_property(user_id, prop_id)
+        await async_session.commit()
+
+        page = await svc.list_properties(user_id, include_archived=False)
+        assert all(p.id != prop_id for p in page.items)
+
+    async def test_includes_archived_when_requested(
+        self, async_session: AsyncSession
+    ) -> None:
+        user_id = await _create_user(async_session)
+        prop_id = await _create_freehold_property(async_session, user_id)
+
+        svc = _make_service(async_session)
+        await svc.archive_property(user_id, prop_id)
+        await async_session.commit()
+
+        page = await svc.list_properties(user_id, include_archived=True)
+        assert any(p.id == prop_id for p in page.items)
+
+
+class TestUpdateProperty:
+    """update_property() persists mutable fields and enforces ownership."""
+
+    async def test_updates_bedrooms_and_epc(
+        self, async_session: AsyncSession
+    ) -> None:
+        user_id = await _create_user(async_session)
+        prop_id = await _create_freehold_property(async_session, user_id)
+
+        svc = _make_service(async_session)
+        updated = await svc.update_property(
+            user_id=user_id,
+            property_id=prop_id,
+            bedrooms=3,
+            epc_rating="B",
+        )
+        await async_session.commit()
+
+        assert updated.bedrooms == 3
+        assert updated.epc_rating == "B"
+
+    async def test_does_not_change_tenure(
+        self, async_session: AsyncSession
+    ) -> None:
+        """Tenure is immutable — update_property must not accept it."""
+        user_id = await _create_user(async_session)
+        prop_id = await _create_freehold_property(async_session, user_id)
+
+        svc = _make_service(async_session)
+        updated = await svc.update_property(
+            user_id=user_id,
+            property_id=prop_id,
+            bedrooms=2,
+        )
+        assert updated.tenure == Tenure.FREEHOLD  # unchanged
+
+    async def test_raises_not_found_for_wrong_user(
+        self, async_session: AsyncSession
+    ) -> None:
+        owner_id = await _create_user(async_session)
+        attacker_id = await _create_user(async_session)
+        prop_id = await _create_freehold_property(async_session, owner_id)
+
+        svc = _make_service(async_session)
+        with pytest.raises(NotFoundError):
+            await svc.update_property(
+                user_id=attacker_id,
+                property_id=prop_id,
+                bedrooms=2,
+            )
+
+
+class TestArchiveProperty:
+    """archive_property() sets is_archived=True and enforces ownership."""
+
+    async def test_sets_is_archived(
+        self, async_session: AsyncSession
+    ) -> None:
+        user_id = await _create_user(async_session)
+        prop_id = await _create_freehold_property(async_session, user_id)
+
+        svc = _make_service(async_session)
+        archived = await svc.archive_property(user_id, prop_id)
+        await async_session.commit()
+
+        assert archived.is_archived is True
+        assert archived.archived_at is not None
+
+    async def test_raises_not_found_for_wrong_user(
+        self, async_session: AsyncSession
+    ) -> None:
+        owner_id = await _create_user(async_session)
+        attacker_id = await _create_user(async_session)
+        prop_id = await _create_freehold_property(async_session, owner_id)
+
+        svc = _make_service(async_session)
+        with pytest.raises(NotFoundError):
+            await svc.archive_property(attacker_id, prop_id)
