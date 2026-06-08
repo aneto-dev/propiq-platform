@@ -230,6 +230,64 @@ class TestDealArchive:
         assert deal.updated_at.tzinfo is not None
 
 
+class TestDealAdvanceStatus:
+    """Tests for Deal.advance_status() pipeline progression."""
+
+    def test_analysed_advances_to_offer_submitted(self) -> None:
+        deal = _make_deal(DealStatus.ANALYSED)
+        deal.advance_status()
+        assert deal.status == DealStatus.OFFER_SUBMITTED
+
+    def test_offer_submitted_advances_to_purchased(self) -> None:
+        deal = _make_deal(DealStatus.OFFER_SUBMITTED)
+        deal.advance_status()
+        assert deal.status == DealStatus.PURCHASED
+
+    def test_purchased_advances_to_held(self) -> None:
+        deal = _make_deal(DealStatus.PURCHASED)
+        deal.advance_status()
+        assert deal.status == DealStatus.HELD
+
+    def test_held_advances_to_exited(self) -> None:
+        deal = _make_deal(DealStatus.HELD)
+        deal.advance_status()
+        assert deal.status == DealStatus.EXITED
+
+    def test_draft_cannot_advance(self) -> None:
+        deal = _make_deal(DealStatus.DRAFT)
+        with pytest.raises(DomainError):
+            deal.advance_status()
+
+    def test_exited_cannot_advance(self) -> None:
+        deal = _make_deal(DealStatus.EXITED)
+        with pytest.raises(DomainError):
+            deal.advance_status()
+
+    def test_archived_cannot_advance(self) -> None:
+        deal = _make_deal(DealStatus.ARCHIVED)
+        with pytest.raises(DomainError):
+            deal.advance_status()
+
+    def test_advance_sets_updated_at(self) -> None:
+        deal = _make_deal(DealStatus.ANALYSED)
+        assert deal.updated_at is None
+        deal.advance_status()
+        assert deal.updated_at is not None
+        assert deal.updated_at.tzinfo is not None
+
+    def test_full_pipeline_progression(self) -> None:
+        """A deal can walk through the entire lifecycle in sequence."""
+        deal = _make_deal(DealStatus.ANALYSED)
+        deal.advance_status()
+        assert deal.status == DealStatus.OFFER_SUBMITTED
+        deal.advance_status()
+        assert deal.status == DealStatus.PURCHASED
+        deal.advance_status()
+        assert deal.status == DealStatus.HELD
+        deal.advance_status()
+        assert deal.status == DealStatus.EXITED
+
+
 class TestDealApplySnapshotCreated:
     """Tests for Deal.apply_snapshot_created() status transitions."""
 

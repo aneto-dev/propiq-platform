@@ -252,6 +252,45 @@ class TestUpdateWorkingInputs:
 
 
 # ---------------------------------------------------------------------------
+# POST /api/v1/deals/{id}/advance
+# ---------------------------------------------------------------------------
+
+
+class TestAdvanceDealStatus:
+    def test_returns_200_with_advanced_deal(self, mock_user: User) -> None:
+        deal = _make_deal(status=DealStatus.OFFER_SUBMITTED)
+        svc = MagicMock()
+        svc.advance_deal_status = AsyncMock(return_value=deal)
+
+        with _make_client(svc, mock_user) as client:
+            response = client.post(f"/api/v1/deals/{_DEAL_ID}/advance")
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "OFFER_SUBMITTED"
+
+    def test_returns_404_for_not_found(self, mock_user: User) -> None:
+        svc = MagicMock()
+        svc.advance_deal_status = AsyncMock(
+            side_effect=NotFoundError(entity="deal", id=_DEAL_ID)
+        )
+
+        with _make_client(svc, mock_user) as client:
+            response = client.post(f"/api/v1/deals/{_DEAL_ID}/advance")
+
+        assert response.status_code == 404
+
+    def test_returns_422_for_invalid_transition(self, mock_user: User) -> None:
+        svc = MagicMock()
+        svc.advance_deal_status = AsyncMock(
+            side_effect=DomainError("Cannot advance deal from status DRAFT.")
+        )
+
+        with _make_client(svc, mock_user) as client:
+            response = client.post(f"/api/v1/deals/{_DEAL_ID}/advance")
+
+        assert response.status_code == 422
+
+
 # POST /api/v1/deals/{id}/archive
 # ---------------------------------------------------------------------------
 

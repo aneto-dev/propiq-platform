@@ -13,7 +13,14 @@
 // Enums
 // ---------------------------------------------------------------------------
 
-export type DealStatus = "DRAFT" | "ANALYSED" | "ARCHIVED";
+export type DealStatus =
+  | "DRAFT"
+  | "ANALYSED"
+  | "OFFER_SUBMITTED"
+  | "PURCHASED"
+  | "HELD"
+  | "EXITED"
+  | "ARCHIVED";
 
 export type MortgageType = "INTEREST_ONLY" | "REPAYMENT";
 

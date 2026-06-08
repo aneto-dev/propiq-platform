@@ -140,21 +140,33 @@ class DealStatus(str, Enum):
     """
     Current lifecycle stage of a deal in the investor's pipeline.
 
-    Phase 1 values only. Phase 2 adds operational workflow stages:
-      OFFER_SUBMITTED, PURCHASED, HELD, EXITED
-    per ROADMAP.md Phase 2 and DOMAIN_MODEL_ARCHITECTURE.md Part 19.1.
+    Transition rules:
+      DRAFT           → ANALYSED          first calculation completed (engine)
+      DRAFT           → ARCHIVED          user abandons a draft
+      ANALYSED        → OFFER_SUBMITTED   user decides to submit an offer
+      ANALYSED        → ARCHIVED          user archives without progressing
+      OFFER_SUBMITTED → PURCHASED         user purchases the property
+      OFFER_SUBMITTED → ARCHIVED          offer falls through
+      PURCHASED       → HELD              property is held in portfolio
+      PURCHASED       → ARCHIVED          deal abandoned post-purchase
+      HELD            → EXITED            property sold / deal exited
+      HELD            → ARCHIVED          deal archived from held state
+      EXITED          → ARCHIVED          deal archived from exited state
+      ARCHIVED        → any               NOT permitted
 
-    Transition rules (enforced by DealStatusTransitionService):
-      DRAFT    → ANALYSED   first calculation completed
-      DRAFT    → ARCHIVED   user abandons a draft deal
-      ANALYSED → ARCHIVED   user archives a completed deal
-      ARCHIVED → any        NOT permitted
+    DRAFT → ANALYSED is driven by the engine (CalculationService).
+    All other user-initiated transitions go through DealService.advance_status.
 
-    Architecture: DOMAIN_MODEL_ARCHITECTURE.md Part 4.4 and Part 5.2.
+    Architecture: DOMAIN_MODEL_ARCHITECTURE.md Part 4.4, Part 5.2, Part 19.1.
+    IMPLEMENTATION_ROADMAP.md Phase 10 Feature 1.
     """
 
     DRAFT = "DRAFT"
     ANALYSED = "ANALYSED"
+    OFFER_SUBMITTED = "OFFER_SUBMITTED"
+    PURCHASED = "PURCHASED"
+    HELD = "HELD"
+    EXITED = "EXITED"
     ARCHIVED = "ARCHIVED"
 
 

@@ -305,6 +305,34 @@ class DealService:
         await self._deal_repo.update(deal)
         return deal
 
+    async def advance_deal_status(
+        self,
+        user_id: uuid.UUID,
+        deal_id: uuid.UUID,
+    ) -> Deal:
+        """
+        Advance a deal to the next pipeline stage.
+
+        Delegates to Deal.advance_status() which enforces the allowed
+        forward transitions:
+          ANALYSED → OFFER_SUBMITTED → PURCHASED → HELD → EXITED
+
+        Raises NotFoundError if deal not found or belongs to another user.
+        Raises DomainError if the current status cannot be advanced
+        (DRAFT, EXITED, ARCHIVED).
+
+        Architecture: DOMAIN_MODEL_ARCHITECTURE.md Part 4.4, Part 19.1.
+        IMPLEMENTATION_ROADMAP.md Phase 10 Feature 1.
+        """
+        deal = await self._deal_repo.find_by_id_for_user(deal_id, user_id)
+        if deal is None:
+            raise NotFoundError(entity="deal", id=deal_id)
+
+        deal.advance_status()
+
+        await self._deal_repo.update(deal)
+        return deal
+
     async def get_deal(
         self,
         user_id: uuid.UUID,

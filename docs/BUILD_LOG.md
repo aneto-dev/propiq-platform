@@ -1544,4 +1544,45 @@ Added a "Recalculate" button to the analysis page header (hidden for ARCHIVED de
 - `npm run lint` — zero warnings or errors
 - Backend: `make test` — 947 passed (unchanged, no backend modifications)
 
+---
+
+### Commit 9.2 — Deal status tracking (Phase 10 Feature 1)
+
+**Message:** `feat: deal lifecycle status tracking — OFFER_SUBMITTED through EXITED`
+**Date:** 2026-06-09
+**Status:** ✅ Complete
+
+**Backend files modified:**
+- `backend/app/domain/enums.py` — `DealStatus` expanded: OFFER_SUBMITTED, PURCHASED, HELD, EXITED added. Transition rules fully documented in docstring.
+- `backend/app/domain/entities/deal.py` — `advance_status()` method added. Enforces `ANALYSED → OFFER_SUBMITTED → PURCHASED → HELD → EXITED`. Raises `DomainError` for invalid source statuses (DRAFT, EXITED, ARCHIVED).
+- `backend/app/services/deal_service.py` — `advance_deal_status(user_id, deal_id)` added. Follows the same ownership-check → domain-call → persist pattern as `archive_deal`.
+- `backend/app/api/v1/routes/deals.py` — `POST /api/v1/deals/{id}/advance` endpoint added. Returns 422 on invalid transition, 404 if not found.
+- `backend/tests/unit/test_domain_entities.py` — 9 new unit tests covering every transition (valid and invalid, including full pipeline walkthrough).
+- `backend/tests/api/test_deals.py` — 3 new API tests (200 advance, 404 not found, 422 invalid transition).
+
+**Backend files created:**
+- `backend/alembic/versions/20260608_2332_a1b2c3d4e5f6_expand_deal_status_enum.py` — `ALTER TYPE deal_status_enum ADD VALUE IF NOT EXISTS` for the four new values. Downgrade is intentionally a no-op (PostgreSQL cannot remove enum values without a type rebuild).
+
+**Frontend files modified:**
+- `frontend/lib/types/deal.ts` — `DealStatus` union expanded to include all 7 values.
+- `frontend/lib/api/deals.ts` — `advanceDealStatus(id)` added: `POST /api/v1/deals/{id}/advance`.
+- `frontend/components/deal/DealStatusBadge.tsx` — New colour scheme for all 7 statuses: DRAFT (gray), ANALYSED (blue), OFFER_SUBMITTED (yellow), PURCHASED (purple), HELD (green), EXITED (teal), ARCHIVED (amber).
+- `frontend/app/(app)/properties/[propertyId]/deals/[dealId]/page.tsx` — Pipeline advancement panel added. Shows a contextual prompt and action button for each advanceable status. EXITED deals show a completion state instead of the input form. "View analysis →" link added to header when snapshot exists.
+
+**Test counts:**
+- Backend: **959 passed** (+12: 9 unit domain tests + 3 API tests)
+- Frontend: tsc zero errors, eslint zero warnings
+
+**Migration applied to test DB:**
+```
+Running upgrade 1d56deba40c1 -> a1b2c3d4e5f6, expand deal_status_enum with workflow stages
+```
+
+**Routes added:**
+```
+POST /api/v1/deals/{id}/advance → 200 DealResponse
+```
+
+**Phase 10 Feature 1 status:** ✅ Complete — deal lifecycle pipeline fully operational.
+
 Commit 3.4 is complete. All in-scope verification steps pass. The `async_session` failures are a known dependency on Commit 4.3 which has not yet been implemented on this branch.

@@ -1,21 +1,37 @@
 import type { DealStatus } from "@/lib/types/deal";
 
 /**
- * Visual status badge for DRAFT / ANALYSED / ARCHIVED deal states.
+ * Visual status badge for all deal lifecycle states.
  *
- * Architecture: IMPLEMENTATION_ROADMAP.md Commit 7.5.
+ * DRAFT            — neutral gray (no analysis yet)
+ * ANALYSED         — blue (analysis complete, considering offer)
+ * OFFER_SUBMITTED  — yellow (active pursuit)
+ * PURCHASED        — purple (property acquired)
+ * HELD             — green (in portfolio, generating rent)
+ * EXITED           — teal (sold / deal exited)
+ * ARCHIVED         — amber (no longer active)
+ *
+ * Architecture: IMPLEMENTATION_ROADMAP.md Phase 10 Feature 1.
  */
 
 const STYLES: Record<DealStatus, string> = {
-  DRAFT: "bg-gray-100 text-gray-600",
-  ANALYSED: "bg-blue-100 text-blue-700",
-  ARCHIVED: "bg-amber-100 text-amber-700",
+  DRAFT:           "bg-gray-100 text-gray-600",
+  ANALYSED:        "bg-blue-100 text-blue-700",
+  OFFER_SUBMITTED: "bg-yellow-100 text-yellow-800",
+  PURCHASED:       "bg-purple-100 text-purple-700",
+  HELD:            "bg-green-100 text-green-700",
+  EXITED:          "bg-teal-100 text-teal-700",
+  ARCHIVED:        "bg-amber-100 text-amber-700",
 };
 
 const LABELS: Record<DealStatus, string> = {
-  DRAFT: "Draft",
-  ANALYSED: "Analysed",
-  ARCHIVED: "Archived",
+  DRAFT:           "Draft",
+  ANALYSED:        "Analysed",
+  OFFER_SUBMITTED: "Offer submitted",
+  PURCHASED:       "Purchased",
+  HELD:            "Held",
+  EXITED:          "Exited",
+  ARCHIVED:        "Archived",
 };
 
 interface DealStatusBadgeProps {

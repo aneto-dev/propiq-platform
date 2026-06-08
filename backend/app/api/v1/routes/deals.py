@@ -6,6 +6,7 @@ Routes:
     GET    /api/v1/deals/                   → 200 list of DealSummaryResponse
     GET    /api/v1/deals/{id}/              → 200 DealResponse
     PATCH  /api/v1/deals/{id}/inputs        → 200 DealResponse
+    POST   /api/v1/deals/{id}/advance       → 200 DealResponse
     POST   /api/v1/deals/{id}/archive       → 200 DealResponse
 
 All routes require authentication (get_current_user dependency).
@@ -202,6 +203,37 @@ async def update_working_inputs(
         user_id=current_user.id,
         deal_id=deal_id,
         input_updates=updates,
+    )
+    await db.commit()
+    return _to_deal_response(deal)
+
+
+@router.post(
+    "/{deal_id}/advance",
+    response_model=DealResponse,
+    summary="Advance deal to next pipeline stage",
+    description=(
+        "Advances the deal through the investment lifecycle: "
+        "ANALYSED → OFFER_SUBMITTED → PURCHASED → HELD → EXITED. "
+        "Returns 422 if the current status cannot be advanced "
+        "(DRAFT, EXITED, or ARCHIVED)."
+    ),
+)
+async def advance_deal_status(
+    deal_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    svc: DealService = Depends(get_deal_service),
+    db: AsyncSession = Depends(get_db),
+) -> DealResponse:
+    """
+    Advance a deal to the next pipeline stage.
+
+    Architecture: DOMAIN_MODEL_ARCHITECTURE.md Part 4.4, Part 19.1.
+    IMPLEMENTATION_ROADMAP.md Phase 10 Feature 1.
+    """
+    deal = await svc.advance_deal_status(
+        user_id=current_user.id,
+        deal_id=deal_id,
     )
     await db.commit()
     return _to_deal_response(deal)

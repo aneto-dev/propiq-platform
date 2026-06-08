@@ -135,11 +135,42 @@ class Deal:
             self.status = DealStatus.ANALYSED
         self.updated_at = datetime.now(UTC)
 
+    def advance_status(self) -> None:
+        """
+        Advance this deal to the next pipeline stage.
+
+        Valid transitions (user-initiated forward progression):
+          ANALYSED        → OFFER_SUBMITTED
+          OFFER_SUBMITTED → PURCHASED
+          PURCHASED       → HELD
+          HELD            → EXITED
+
+        Raises DomainError if the current status has no forward transition
+        (DRAFT, EXITED, ARCHIVED).
+
+        Architecture: DOMAIN_MODEL_ARCHITECTURE.md Part 4.4, Part 19.1.
+        IMPLEMENTATION_ROADMAP.md Phase 10 Feature 1.
+        """
+        _transitions = {
+            DealStatus.ANALYSED:        DealStatus.OFFER_SUBMITTED,
+            DealStatus.OFFER_SUBMITTED: DealStatus.PURCHASED,
+            DealStatus.PURCHASED:       DealStatus.HELD,
+            DealStatus.HELD:            DealStatus.EXITED,
+        }
+        next_status = _transitions.get(self.status)
+        if next_status is None:
+            raise DomainError(
+                f"Cannot advance deal from status {self.status.value}. "
+                f"Valid statuses to advance: ANALYSED, OFFER_SUBMITTED, PURCHASED, HELD."
+            )
+        self.status = next_status
+        self.updated_at = datetime.now(UTC)
+
     def archive(self) -> None:
         """
         Transition this deal to ARCHIVED status.
 
-        Valid from DRAFT or ANALYSED. Raises DomainError if already ARCHIVED.
+        Valid from any non-ARCHIVED status. Raises DomainError if already ARCHIVED.
         Once archived, no further mutations are permitted (enforced by the
         service layer — the entity itself does not re-check on every field
         access, but DealService.update_working_inputs guards against it).

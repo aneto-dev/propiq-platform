@@ -48,3 +48,16 @@ export async function updateWorkingInputs(
     body: JSON.stringify(updates),
   });
 }
+
+/**
+ * POST /api/v1/deals/{id}/advance — advance deal to the next pipeline stage.
+ * Valid from ANALYSED → OFFER_SUBMITTED → PURCHASED → HELD → EXITED.
+ * Returns 422 if the current status cannot be advanced.
+ *
+ * Architecture: IMPLEMENTATION_ROADMAP.md Phase 10 Feature 1.
+ */
+export async function advanceDealStatus(id: string): Promise<Deal> {
+  return apiRequest<Deal>(`/api/v1/deals/${id}/advance`, {
+    method: "POST",
+  });
+}
