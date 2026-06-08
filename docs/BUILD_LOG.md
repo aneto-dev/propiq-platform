@@ -1486,7 +1486,62 @@ Deal management persistence: PostgreSQL via Railway. Auth: Supabase JWT. All bac
 
 ### Repository baseline
 
-Branch: `clean-migration-baseline`
+Branch: `clean-migration-baseline` (merged to `main`)
 Latest commit: `ecfe3ad` — `chore(frontend): add environment variable template`
+
+---
+
+## Phase 9 — Hardening and Launch Readiness (partial)
+
+### Commit 9.1 — Deal pipeline dashboard, snapshot history, recalculation
+
+**Message:** `feat(frontend): deal pipeline dashboard, snapshot history, and recalculate`
+**Date:** 2026-06-09
+**Status:** ✅ Complete
+
+**Files created:**
+- `frontend/app/(app)/properties/[propertyId]/deals/[dealId]/history/page.tsx`
+
+**Files modified:**
+- `frontend/app/(app)/dashboard/page.tsx` — replaced Phase 7 stub with live deal pipeline
+- `frontend/app/(app)/properties/[propertyId]/deals/[dealId]/analysis/page.tsx` — added Recalculate button and View history link
+
+**Dashboard (`dashboard/page.tsx`):**
+
+Replaced the stub ("Property and deal creation coming in the next step") with a live client-side deal pipeline. Fetches all user deals (`GET /api/v1/deals/`) and all properties (`GET /api/v1/properties/`) in parallel, joins them client-side, and renders active deals (DRAFT and ANALYSED, not ARCHIVED) sorted by most recently updated. Each deal card shows:
+- Deal label and property address
+- Annual cash flow from latest snapshot (colour-coded: green positive, red negative)
+- DealStatusBadge
+- For ANALYSED deals: gross yield, HIGH flag count, analysis date
+
+**Snapshot history page (`/deals/[dealId]/history`):**
+
+New page listing all snapshot history entries for a deal via `GET /api/v1/snapshots/?deal_id={dealId}`. Each entry shows:
+- Current vs superseded badge
+- Calculated timestamp and engine version
+- Annual cash flow and gross yield (from `SnapshotHistoryEntry` key metrics)
+- HIGH / MEDIUM flag counts where non-zero
+Links back to the current analysis view.
+
+**Recalculate button (analysis page):**
+
+Added a "Recalculate" button to the analysis page header (hidden for ARCHIVED deals). Calls `POST /api/v1/calculations/recalculate` with `deal_id`, then reloads the deal and latest snapshot in place. Shows error message on failure. "View history" link added alongside the recalculate button, pointing to the new history page.
+
+**Phase 9 items addressed:**
+- ✅ Item 6 — Snapshot history list UI
+- ✅ Item 10 — Recalculation with current assumptions
+
+**Phase 9 items remaining:**
+- [ ] Item 1 — Rate limiting on calculation endpoints
+- [ ] Item 2 — Production error monitoring (Sentry/Axiom)
+- [ ] Item 5 — Investor profile creation and management UI
+- [ ] Item 7 — HMO analysis
+- [ ] Item 8 — Ltd Co vs personal comparison view
+- [ ] Item 9 — Admin configuration management routes
+
+**Verification:**
+- `npm run typecheck` — zero errors
+- `npm run lint` — zero warnings or errors
+- Backend: `make test` — 947 passed (unchanged, no backend modifications)
 
 Commit 3.4 is complete. All in-scope verification steps pass. The `async_session` failures are a known dependency on Commit 4.3 which has not yet been implemented on this branch.
