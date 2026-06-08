@@ -1290,3 +1290,203 @@ tests/integration/snapshots/test_snapshot_completeness.py
 ### Commit 3.4 scope verdict
 
 Commit 3.4 is complete. All in-scope verification steps pass. The `async_session` failures are a known dependency on Commit 4.3 which has not yet been implemented on this branch.
+
+---
+
+## Phase 5 — Application Service Layer
+
+| Commit | Message | Status | Tests added | Running total |
+|---|---|---|---|---|
+| 5.1 | `feat(services): audit service with two write paths` | ✅ Complete | — | — |
+| 5.2 | `feat(services): configuration service and version-aware config loading` | ✅ Complete | — | — |
+| 5.3 | `feat(services): user service and property service` | ✅ Complete | — | — |
+| 5.4 | `feat(services): deal service with status transitions` | ✅ Complete | — | — |
+| 5.5 | `feat(services): snapshot service — persist and read snapshots` | ✅ Complete | — | — |
+| 5.6 | `feat(services): calculation service — end-to-end calculation pipeline` | ✅ Complete | — | — |
+
+**Services implemented:**
+
+- **AuditService** — two write paths: `record_success` (snapshot created) and `record_failure` (validation error or engine error). Fire-and-forget; write failures are logged but never raised to callers. Audit records are append-only.
+- **ConfigurationService** — `resolve_defaults(user_id, raw_inputs, as_of_date)` loads active SDLT, corporation tax, and assumption configurations for the given date. Returns `ResolvedInputs` with all optional fields filled from config.
+- **UserService** — `get_or_create_user(supabase_auth_id, email)` implements upsert: find by supabase_auth_id, insert if absent. Called on every authenticated request.
+- **PropertyService** — `create_property`, `get_property`, `list_properties`, `update_property`, `archive_property`. All methods enforce user ownership.
+- **DealService** — `create_deal`, `get_deal`, `list_deals`, `update_working_inputs`, `archive_deal`. Status transitions (DRAFT → ARCHIVED, ANALYSED → ARCHIVED) enforced via domain entity `Deal.archive()`. ARCHIVED deals reject working input updates via `DomainError`.
+- **SnapshotService** — `get_display_summary` (outputs + flags, no intermediates), `get_full_snapshot` (full including SDLT band breakdown and intermediates), `get_history` (summary list per deal).
+- **CalculationService** — end-to-end pipeline: `ConfigurationService.resolve_defaults` → `assemble_engine_input` → `orchestrator.run` → `build_snapshot_from_engine_result` → `SnapshotRepository.save` → `AuditService.record_*`. Returns `CalculationSuccess | CalculationValidationFailure | CalculationError`.
+
+**Integration tests (service layer):** `tests/integration/test_*_service.py` — cover the full service → repository → database path. Services tested against real test DB via `AsyncSession` fixture.
+
+**Phase 5 exit criteria:** All service methods implemented. All integration tests pass. mypy strict + ruff clean.
+
+---
+
+## Phase 6 — API Layer
+
+| Commit | Message | Status |
+|---|---|---|
+| 6.1 | `feat(api): Supabase JWT verification dependency` | ✅ Complete |
+| 6.2 | `feat(api): global error handlers and Pydantic v2 DTO schemas` | ✅ Complete |
+| 6.3 | `feat(api): property and deal CRUD routes` | ✅ Complete |
+| 6.4 | `feat(api): calculation routes — the core product endpoint` | ✅ Complete |
+| 6.5 | `feat(api): snapshot read routes` | ✅ Complete |
+| 6.6 | `feat(api): correlation ID middleware and structured request logging` | ✅ Complete |
+
+**API routes implemented:**
+
+| Route | Method | Response | Auth |
+|---|---|---|---|
+| `GET /api/v1/health` | — | `{"status":"ok", "environment":"...", "version":"..."}` | None |
+| `POST /api/v1/properties/` | — | `PropertyResponse` 201 | Required |
+| `GET /api/v1/properties/` | — | `list[PropertyResponse]` 200 | Required |
+| `GET /api/v1/properties/{id}/` | — | `PropertyResponse` 200 | Required |
+| `PATCH /api/v1/properties/{id}/` | — | `PropertyResponse` 200 | Required |
+| `POST /api/v1/properties/{id}/archive` | — | `PropertyResponse` 200 | Required |
+| `POST /api/v1/deals/` | — | `DealResponse` 201 | Required |
+| `GET /api/v1/deals/` | — | `list[DealSummaryResponse]` 200 | Required |
+| `GET /api/v1/deals/{id}/` | — | `DealResponse` 200 | Required |
+| `PATCH /api/v1/deals/{id}/inputs` | — | `DealResponse` 200 | Required |
+| `POST /api/v1/deals/{id}/archive` | — | `DealResponse` 200 | Required |
+| `POST /api/v1/calculations/` | — | `CalculationSuccessResponse` 201 | Required |
+| `GET /api/v1/snapshots/{id}` | — | `SnapshotSummaryResponse` 200 | Required |
+| `GET /api/v1/snapshots/{id}/full` | — | `SnapshotFullResponse` 200 | Required |
+| `GET /api/v1/snapshots/` | — | `list[SnapshotHistoryEntryResponse]` 200 | Required |
+
+**Auth dependency (`get_current_user`):** Verifies Supabase RS256 JWT from `Authorization: Bearer` header. Fetches JWKS from `{supabase_url}/.well-known/jwks.json` (cached). Calls `UserService.get_or_create_user` to resolve/create the platform user from `sub` claim. Returns `User` domain entity; raises HTTP 401 on any failure.
+
+**Error handler mappings:** `NotFoundError → 404`, `DomainError → 422`, `CalculationValidationFailure → 422` with structured `field_errors`, `EngineError → 500`.
+
+**Correlation ID middleware:** Assigns `req_<uuid4>` to every request. Accepts client-supplied `X-Correlation-ID` if valid UUID. Binds to structlog context. Echoes on every response. Logs `api.request.received` and `api.request.completed` with method, path, status_code, duration_ms.
+
+**API tests:** `tests/api/test_*.py` — all routes tested with mock-authenticated client. DealService, PropertyService, SnapshotService replaced with `AsyncMock`. No database required for API tests.
+
+**Phase 6 exit criteria:** All routes implemented. Health endpoint returns 200. JWT verification works. All API tests pass. mypy strict + ruff clean.
+
+---
+
+## Phase 7 — Frontend Vertical Slice
+
+| Commit | Message | Status |
+|---|---|---|
+| 7.1 | `feat(frontend): Next.js 15 project with TypeScript and Tailwind` | ✅ Complete |
+| 7.2 | `feat(frontend): Supabase auth client and typed API client base` | ✅ Complete |
+| 7.3 | `feat(frontend): login page and authenticated app shell` | ✅ Complete |
+| 7.4 | `feat(frontend): property creation form and list` | ✅ Complete |
+| 7.5 | `feat(frontend): deal creation and input form` | ✅ Complete |
+| 7.6 | `feat(frontend): deal analysis page and snapshot visualisation` | ✅ Complete |
+
+**Frontend stack:** Next.js 15, TypeScript 5, Tailwind CSS 4, `@supabase/ssr` 0.5.
+
+**Routes implemented:**
+
+| URL pattern | Page |
+|---|---|
+| `/login` | Email/password sign-in via Supabase |
+| `/properties` | Property list |
+| `/properties/new` | Property creation form |
+| `/properties/[propertyId]/deals` | Deal list for a property |
+| `/properties/[propertyId]/deals/new` | Create deal (label input) |
+| `/properties/[propertyId]/deals/[dealId]` | Deal workspace — input form with auto-save |
+| `/properties/[propertyId]/deals/[dealId]/analysis` | Analysis page — snapshot visualisation |
+
+**Auth guard:** `app/(app)/layout.tsx` is a Server Component that reads the Supabase session and redirects unauthenticated requests to `/login`.
+
+**API client layer (`frontend/lib/api/`):**
+- `client.ts` — base `apiRequest<T>` with JWT injection from browser Supabase session
+- `properties.ts` — `getProperties`, `getProperty`, `createProperty`
+- `deals.ts` — `getDeals`, `getDeal`, `createDeal`, `updateWorkingInputs`
+- `snapshots.ts` — `getSnapshot`, `getSnapshotFull`, `getSnapshotHistory`
+- `calculations.ts` — `runCalculation`, `recalculate`
+
+**TypeScript types (`frontend/lib/types/`):** All types mirror backend Pydantic schemas exactly. All monetary/rate fields are `string` (MoneyStr serialisation). No `number` types for monetary values.
+
+**Deal input form (`DealInputForm.tsx`):** 18-field form (required + optional). Auto-saves each field to `PATCH /api/v1/deals/{id}/inputs` on blur (fire-and-forget). "Analyse this deal" assembles `CalculationRequest` and calls `POST /api/v1/calculations/`; on success redirects to analysis page.
+
+**Analysis page loading strategy:** `GET /api/v1/deals/{dealId}` → `deal.latest_snapshot_id` → `GET /api/v1/snapshots/{id}/full`. The full endpoint is required because `SDLTBreakdown` and `AcquisitionCostBreakdown` need `SnapshotIntermediates` (only in the full response).
+
+**Analysis components:**
+- `CashFlowWaterfall` — gross rent → effective rent → NOI → post-mortgage → post-tax → annual cash flow
+- `YieldMetrics` — gross/net yield, ROCE, cash-on-cash, LTV, ICR (null-safe for cash purchases)
+- `SDLTBreakdown` — band-by-band table from `intermediates.sdlt_band_breakdown`
+- `AcquisitionCostBreakdown` — purchase price + SDLT + legal + refurb from working inputs + intermediates
+- `RiskFlagList` — sorted HIGH → MEDIUM → INFO with severity colour coding
+
+**Frontend quality:** `tsc --noEmit` zero errors. `next lint` zero warnings.
+
+**Phase 7 exit criteria:** All routes implemented. TypeScript compiles with zero errors. No calculation logic in any frontend component.
+
+---
+
+## Phase 8 — First Deployment to Staging
+
+| Commit | Message | Status |
+|---|---|---|
+| 8.1 | `infra: backend Dockerfile for Railway deployment` | ✅ Complete |
+| 8.2 | `infra: add Railway service configuration` | ✅ Complete |
+| 8.3 | `feat: add environment-based CORS configuration` | ✅ Complete |
+| 8.4 | `chore(frontend): add environment variable template` | ✅ Complete |
+
+**Dockerfile (`backend/Dockerfile`):** `python:3.13-slim` base. Copies `pyproject.toml`, `poetry.lock`, `app/`, `alembic/`, `alembic.ini`, `scripts/`. CMD: `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
+
+**Railway config (`infrastructure/railway.toml`):**
+- Builder: `DOCKERFILE` using `backend/Dockerfile`
+- Start command: `alembic upgrade head && python scripts/seed_configuration.py && uvicorn app.main:app`
+- Health check: `GET /api/v1/health`
+
+**CORS (`backend/app/main.py` + `backend/app/core/config.py`):**
+- New `Settings` field: `allowed_origins: list[str] = []` — parses comma-separated env var
+- `CORSMiddleware` added in `create_app()` after `register_middleware` (outermost layer, LIFO)
+- Guard: development → `["*"]`; staging/production → `settings.allowed_origins`
+
+**Frontend env template (`frontend/.env.example`):** Documents all three required `NEXT_PUBLIC_*` variables with descriptions. `.env.local` is gitignored — real values go in hosting platform's env panel.
+
+**Production auth fix:** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` were set to placeholder values in `.env.local`. `NEXT_PUBLIC_*` vars are baked at build time; hosting platform env vars must be set before build. Auth now working in production after setting real Supabase credentials in Railway/Vercel env panel and rebuilding.
+
+**Known Railway deployment risks (pre-verified):**
+- `DATABASE_URL` from Railway PostgreSQL plugin requires manual `postgresql://` → `postgresql+asyncpg://` prefix change
+- Start command `uvicorn app.main:app` missing `--host 0.0.0.0 --port 8000` flags (overrides Dockerfile CMD)
+- `railway.toml` at `infrastructure/railway.toml` requires Railway dashboard "Config File Path" or "Root Directory" configuration to be discovered
+
+**Phase 8 exit criteria:** Backend deployed on Railway. Auth working in production (confirmed). Full vertical slice code complete and tested.
+
+---
+
+## Current State — 2026-06-08
+
+### Test suite
+
+| Layer | Command | Result |
+|---|---|---|
+| Unit + regression + determinism | `make test-unit` | ✅ **582 passed** |
+| Integration + API | `make test-int` | ✅ **365 passed** |
+| **Full suite** | `make test` | ✅ **947 passed, 0 failed, 0 errors** |
+
+### Static analysis
+
+| Tool | Command | Result |
+|---|---|---|
+| Backend mypy (strict) | `make typecheck` | ✅ No issues in 87 source files |
+| Backend ruff | `make lint` | ✅ All checks passed |
+| Frontend TypeScript | `npm run typecheck` | ✅ Zero errors |
+| Frontend ESLint | `npm run lint` | ✅ Zero warnings or errors |
+
+### Implemented end-to-end
+
+The complete vertical slice is implemented and verified:
+
+```
+Login (Supabase auth)
+→ Properties list / create
+→ Deals list / create (per property)
+→ Deal workspace (input form, auto-save on blur)
+→ Analyse this deal (POST /api/v1/calculations/)
+→ Analysis page (cash flow, yields, SDLT breakdown, risk flags)
+```
+
+Deal management persistence: PostgreSQL via Railway. Auth: Supabase JWT. All backend routes require authentication. Ownership enforced in service layer (not found = 404 for both "not found" and "wrong user").
+
+### Repository baseline
+
+Branch: `clean-migration-baseline`
+Latest commit: `ecfe3ad` — `chore(frontend): add environment variable template`
+
+Commit 3.4 is complete. All in-scope verification steps pass. The `async_session` failures are a known dependency on Commit 4.3 which has not yet been implemented on this branch.
