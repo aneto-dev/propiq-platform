@@ -112,6 +112,16 @@ Shared fixtures (all scenario inputs + `REFERENCE_CONFIG`) live in `backend/test
 
 **`NEXT_PUBLIC_*` env vars are baked at build time.** Changing them requires a rebuild. Local values live in `frontend/.env.local` (gitignored). See `frontend/.env.example` for required variables.
 
+Required variables (all three must be set before the Railway build runs):
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | Backend base URL — prefixed to every `/api/v1/…` call | `https://propiq-backend.up.railway.app` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | `https://<ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anon key | `eyJ…` |
+
+Missing `NEXT_PUBLIC_API_URL` causes all API calls to resolve to `/undefined/api/v1/…`.
+
 ### Key domain types
 
 `CalculationSnapshot` is the central aggregate. It is append-only — once written, no field is ever updated. `deal.latest_snapshot_id` is a nullable FK updated by `CalculationService` on each successful calculation.

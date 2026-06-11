@@ -49,9 +49,9 @@ Key design principles:
 git clone <repo>
 cd propiq
 
-# 2. Copy environment file
-cp .env.example .env
-# Fill in Supabase values in .env
+# 2. Copy the frontend environment file and fill in real values
+cp frontend/.env.example frontend/.env.local
+# Set NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 # 3. Start the database
 make dev-db
@@ -77,6 +77,20 @@ make dev-frontend
 ```bash
 make test
 ```
+
+---
+
+## Railway Deployment
+
+Three environment variables must be set in the Railway frontend service **before the build runs**. `NEXT_PUBLIC_*` values are baked into the client bundle at build time — a restart without a rebuild will not apply changes.
+
+| Variable | Where to find it |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Railway backend service → Settings → Domain (e.g. `https://propiq-backend.up.railway.app`) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase dashboard → Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase dashboard → Settings → API → anon public key |
+
+After setting variables, use **Redeploy** (not Restart) to trigger a full rebuild.
 
 ---
 
