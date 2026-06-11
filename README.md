@@ -82,7 +82,9 @@ make test
 
 ## Railway Deployment
 
-Three environment variables must be set in the Railway frontend service **before the build runs**. `NEXT_PUBLIC_*` values are baked into the client bundle at build time — a restart without a rebuild will not apply changes.
+### Frontend service
+
+Three environment variables must be set **before the build runs**. `NEXT_PUBLIC_*` values are baked into the client bundle at build time — a restart without a rebuild will not apply changes. Use **Redeploy** (not Restart) after changing these.
 
 | Variable | Where to find it |
 |---|---|
@@ -90,7 +92,18 @@ Three environment variables must be set in the Railway frontend service **before
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase dashboard → Settings → API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase dashboard → Settings → API → anon public key |
 
-After setting variables, use **Redeploy** (not Restart) to trigger a full rebuild.
+### Backend service
+
+These variables must be set in the Railway backend service environment panel. See `backend/.env.example` for full documentation.
+
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | Yes | Must use `postgresql+asyncpg://` prefix (Railway provides `postgresql://` — change the prefix) |
+| `SUPABASE_URL` | Yes | Supabase dashboard → Settings → API |
+| `SUPABASE_ANON_KEY` | Yes | Supabase dashboard → Settings → API |
+| `SUPABASE_JWT_SECRET` | Yes | Supabase dashboard → Settings → API → JWT Settings |
+| `ENVIRONMENT` | Yes | Set to `production` |
+| `ALLOWED_ORIGINS` | Yes | Comma-separated frontend origins. **Missing = all cross-origin requests blocked.** Example: `https://propiq-platform-production.up.railway.app,http://localhost:3000` |
 
 ---
 

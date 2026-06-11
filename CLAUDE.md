@@ -122,6 +122,21 @@ Required variables (all three must be set before the Railway build runs):
 
 Missing `NEXT_PUBLIC_API_URL` causes all API calls to resolve to `/undefined/api/v1/…`.
 
+### Backend environment variables (production)
+
+Required in the Railway backend service. See `backend/.env.example` for local dev documentation.
+
+| Variable | Notes |
+|---|---|
+| `DATABASE_URL` | Must use `postgresql+asyncpg://` prefix — Railway provides `postgresql://` by default |
+| `SUPABASE_URL` | Supabase dashboard → Settings → API |
+| `SUPABASE_ANON_KEY` | Supabase dashboard → Settings → API |
+| `SUPABASE_JWT_SECRET` | Supabase dashboard → Settings → API → JWT Settings |
+| `ENVIRONMENT` | Set to `production` |
+| `ALLOWED_ORIGINS` | Comma-separated frontend origins. **Missing or empty = all cross-origin requests blocked (CORS error).** Example: `https://propiq-platform-production.up.railway.app,http://localhost:3000` |
+
+CORS logic in `app/main.py`: in `development` environment, all origins are allowed (`*`). In `staging`/`production`, only origins in `ALLOWED_ORIGINS` are permitted. The validator in `config.py` splits comma-separated strings automatically.
+
 ### Key domain types
 
 `CalculationSnapshot` is the central aggregate. It is append-only — once written, no field is ever updated. `deal.latest_snapshot_id` is a nullable FK updated by `CalculationService` on each successful calculation.
