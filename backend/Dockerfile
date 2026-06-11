@@ -2,7 +2,7 @@ FROM python:3.13-slim
 
 WORKDIR /app
 COPY pyproject.toml poetry.lock ./
-RUN pip install poetry && poetry install --no-dev
+RUN pip install poetry && poetry install --only main
 
 COPY app/ ./app/
 COPY alembic/ ./alembic/

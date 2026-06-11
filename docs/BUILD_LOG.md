@@ -1586,3 +1586,31 @@ POST /api/v1/deals/{id}/advance → 200 DealResponse
 **Phase 10 Feature 1 status:** ✅ Complete — deal lifecycle pipeline fully operational.
 
 Commit 3.4 is complete. All in-scope verification steps pass. The `async_session` failures are a known dependency on Commit 4.3 which has not yet been implemented on this branch.
+
+---
+
+## Production Deployment Fixes
+
+### Fix 1 — Poetry 2.x Dockerfile compatibility
+
+**Problem:** Railway build failing with `The option "--no-dev" does not exist`. Poetry 2.x removed the `--no-dev` flag.
+
+**Fix:** Updated `backend/Dockerfile` line 5: `poetry install --no-dev` → `poetry install --only main`.
+
+**File changed:** `backend/Dockerfile`
+
+### Fix 2 — NEXT_PUBLIC_API_URL missing in Railway frontend
+
+**Problem:** All API calls resolving to `/undefined/api/v1/…`. Root cause: `NEXT_PUBLIC_API_URL` not set as an environment variable in Railway frontend service before build. `NEXT_PUBLIC_*` vars are baked at build time — missing = literal `"undefined"` in bundle.
+
+**Fix:** Set `NEXT_PUBLIC_API_URL=https://propiq-backend-production.up.railway.app` in Railway frontend service → Variables, then trigger a full Redeploy.
+
+**Documentation updated:** `frontend/.env.example` (already had it), `CLAUDE.md`, `README.md`.
+
+### Fix 3 — ALLOWED_ORIGINS missing in Railway backend
+
+**Problem:** CORS blocking all cross-origin requests from the frontend. Root cause: `ALLOWED_ORIGINS` env var not set in Railway backend service. In production, CORS falls back to `settings.allowed_origins` which defaults to `[]` — blocking everything.
+
+**Fix:** Set `ALLOWED_ORIGINS=https://propiq-platform-production.up.railway.app,http://localhost:3000` in Railway backend service → Variables.
+
+**Documentation updated:** `backend/.env.example` (created), `CLAUDE.md`, `README.md`.
