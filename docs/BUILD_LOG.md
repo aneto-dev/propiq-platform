@@ -1622,3 +1622,13 @@ Commit 3.4 is complete. All in-scope verification steps pass. The `async_session
 **Fix:** Removed `readme = "README.md"` and `packages = [{ include = "app" }]` from `pyproject.toml`. Added `package-mode = false` — the correct Poetry 2 declaration that this is an application, not a library. Skips root package installation entirely without needing `--no-root` CLI flags.
 
 **File changed:** `backend/pyproject.toml`
+
+### Fix 5 — uvicorn not on PATH in Docker container
+
+**Problem:** Railway start command failing with `The executable uvicorn could not be found`. Poetry installs packages into an isolated virtualenv inside the container; binaries in that virtualenv are not on the system `PATH` when Railway executes the start command. Additionally, the `startCommand` in `railway.toml` was missing `--host 0.0.0.0 --port 8000`.
+
+**Fix 1:** Added `poetry config virtualenvs.create false` in `backend/Dockerfile` before `poetry install`. This installs all packages directly into the system Python, making `uvicorn` and all other binaries available on `PATH`.
+
+**Fix 2:** Added `--host 0.0.0.0 --port 8000` to `startCommand` in `infrastructure/railway.toml`.
+
+**Files changed:** `backend/Dockerfile`, `infrastructure/railway.toml`
