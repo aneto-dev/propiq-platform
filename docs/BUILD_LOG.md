@@ -1632,3 +1632,15 @@ Commit 3.4 is complete. All in-scope verification steps pass. The `async_session
 **Fix 2:** Added `--host 0.0.0.0 --port 8000` to `startCommand` in `infrastructure/railway.toml`.
 
 **Files changed:** `backend/Dockerfile`, `infrastructure/railway.toml`
+
+### Fix 6 — Module-level engine creation crashing application startup
+
+**Problem:** Railway container starting, uvicorn launching, then crashing immediately on import. Full chain: `calculations.py` → `app.api.dependencies` → `app.repositories.configuration_repository` → `app.db.models.configuration` → triggers `app/db/__init__.py` (Python initialises all parent packages on any subpackage import) → `app/db/__init__.py` imported `SessionLocal, engine` from `app.db.session` → `app.db.session` called `create_async_engine(settings.database_url)` at module level → `database_url` defaults to `""` → SQLAlchemy `ArgumentError: Could not parse SQLAlchemy URL`.
+
+**Root cause:** `app/db/__init__.py` re-exported the SQLAlchemy engine and sessionmaker from `app.db.session`. Both were constructed at module level, so engine creation ran the moment any `app.db.*` subpackage was imported — before any request handler ran and before the lazy engine in `dependencies.py` had a chance to read the env var.
+
+**Fix:** Removed `SessionLocal` and `engine` re-exports from `app/db/__init__.py`. These were not imported by anything outside `app/db/` — the production app manages its own lazy engine in `dependencies.py`. `app/db/__init__.py` now only re-exports `Base` (safe — no I/O, no settings access).
+
+**Verified:** `DATABASE_URL="" ENVIRONMENT=production python -c "from app.api.v1.router import v1_router"` now exits cleanly.
+
+**File changed:** `backend/app/db/__init__.py`
