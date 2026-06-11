@@ -1614,3 +1614,11 @@ Commit 3.4 is complete. All in-scope verification steps pass. The `async_session
 **Fix:** Set `ALLOWED_ORIGINS=https://propiq-platform-production.up.railway.app,http://localhost:3000` in Railway backend service → Variables.
 
 **Documentation updated:** `backend/.env.example` (created), `CLAUDE.md`, `README.md`.
+
+### Fix 4 — Poetry package-mode for application deployment
+
+**Problem:** Railway build failing with `The current project could not be installed: Readme path /app/README.md does not exist`. Poetry 2.x attempts to install the project as a package, requiring the README referenced in `[tool.poetry]`.
+
+**Fix:** Removed `readme = "README.md"` and `packages = [{ include = "app" }]` from `pyproject.toml`. Added `package-mode = false` — the correct Poetry 2 declaration that this is an application, not a library. Skips root package installation entirely without needing `--no-root` CLI flags.
+
+**File changed:** `backend/pyproject.toml`
