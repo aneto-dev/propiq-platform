@@ -1662,3 +1662,13 @@ The response `{"name":"PropIQ API","version":"0.1.0","docs":"/docs"}` returned a
 **Fix:** Added `buildContext = "."` to `railway.toml` to explicitly set the build context to the repository root. This makes `COPY backend/...` paths resolve correctly.
 
 **File changed:** `railway.toml`
+
+### Fix 9 — Dockerfile COPY paths corrected for confirmed Railway rootDirectory
+
+**Root cause confirmed via Railway dashboard:** propiq-backend service has `rootDirectory = /backend`. The Docker build context is therefore `backend/`. All `COPY backend/...` prefixes in the Dockerfile were resolving to `backend/backend/...` which does not exist.
+
+Earlier COPY layers appeared to pass due to Docker layer cache hits from prior builds where the context was different. Only uncached layers produced visible "not found" errors.
+
+**Fix:** Removed `backend/` prefix from all COPY statements in `backend/Dockerfile`. Paths are now relative to the `backend/` build context as Railway provides it. Also removed the incorrect `buildContext = "."` from `railway.toml`.
+
+**Files changed:** `backend/Dockerfile`, `railway.toml`
