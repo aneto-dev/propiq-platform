@@ -1644,3 +1644,13 @@ Commit 3.4 is complete. All in-scope verification steps pass. The `async_session
 **Verified:** `DATABASE_URL="" ENVIRONMENT=production python -c "from app.api.v1.router import v1_router"` now exits cleanly.
 
 **File changed:** `backend/app/db/__init__.py`
+
+### Fix 7 — railway.toml never at repository root
+
+**Problem:** `railway.toml` was committed to `infrastructure/railway.toml`. Railway reads this file only from the repository root (or the configured `rootDirectory`). As a result, Railway has never applied our Dockerfile path, start command, or health check path — it has been using Nixpacks autodiscovery on every deployment.
+
+The response `{"name":"PropIQ API","version":"0.1.0","docs":"/docs"}` returned at `GET /` is not produced by any code in this repository (no root handler, wrong version). It is a Railway/Nixpacks generated response from whatever it auto-detected.
+
+**Fix:** Copied `infrastructure/railway.toml` to `railway.toml` at the repository root. Railway will now use `builder = "DOCKERFILE"`, `dockerfilePath = "backend/Dockerfile"`, and the correct start command with `--host 0.0.0.0 --port 8000`.
+
+**File changed:** `railway.toml` (new at repo root)
