@@ -1654,3 +1654,11 @@ The response `{"name":"PropIQ API","version":"0.1.0","docs":"/docs"}` returned a
 **Fix:** Copied `infrastructure/railway.toml` to `railway.toml` at the repository root. Railway will now use `builder = "DOCKERFILE"`, `dockerfilePath = "backend/Dockerfile"`, and the correct start command with `--host 0.0.0.0 --port 8000`.
 
 **File changed:** `railway.toml` (new at repo root)
+
+### Fix 8 — Docker build context was backend/ not repo root
+
+**Problem:** Railway uses the directory containing the Dockerfile as the default build context. With `dockerfilePath = "backend/Dockerfile"`, the context was `backend/`. All `COPY backend/...` paths were therefore looking for `backend/backend/...` which does not exist. Earlier COPY layers appeared to pass due to Docker layer cache hits from prior builds; only uncached layers (new `scripts/` COPY) failed with "not found".
+
+**Fix:** Added `buildContext = "."` to `railway.toml` to explicitly set the build context to the repository root. This makes `COPY backend/...` paths resolve correctly.
+
+**File changed:** `railway.toml`
