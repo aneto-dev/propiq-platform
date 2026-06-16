@@ -1,14 +1,14 @@
 FROM python:3.13-slim
 
 WORKDIR /app
-COPY pyproject.toml poetry.lock ./
+COPY backend/pyproject.toml backend/poetry.lock ./
 RUN pip install poetry \
     && poetry config virtualenvs.create false \
     && poetry install --only main
 
-COPY app/ ./app/
-COPY alembic/ ./alembic/
-COPY alembic.ini ./
-COPY scripts/ ./scripts/
+COPY backend/app/ ./app/
+COPY backend/alembic/ ./alembic/
+COPY backend/alembic.ini ./
+COPY backend/scripts/ ./scripts/
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
