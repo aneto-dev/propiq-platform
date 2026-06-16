@@ -9,6 +9,7 @@ RUN pip install poetry \
 COPY backend/app/ ./app/
 COPY backend/alembic/ ./alembic/
 COPY backend/alembic.ini ./
-COPY backend/scripts/ ./scripts/
+RUN mkdir -p ./scripts
+COPY backend/scripts/seed_configuration.py ./scripts/seed_configuration.py
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
